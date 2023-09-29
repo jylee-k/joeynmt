@@ -1,36 +1,39 @@
-name: "transformer_iwslt14_deen_bpe"
+name: "aihub_en-ko_bpe"
 joeynmt_version: "2.0.0"
 
 data:
-    train: "test/data/iwslt14/train"
-    dev: "test/data/iwslt14/valid"
-    test: "test/data/iwslt14/test"
+    train: "../../data/aihub_en-ko/processed/data/spaced/syllable/train"
+    dev: "../../data/aihub_en-ko/processed/data/spaced/syllable/dev"
+    test: "../../data/aihub_en-ko/processed/data/spaced/syllable/test"
     dataset_type: "plain"
+    sample_dev_subset: 5000 # run validation on this number of random samples from dev set, fixed seed 42 in datasets.py
     src:
-        lang: "de"
-        max_length: 62
-        lowercase: True
-        normalize: False
-        level: "bpe"
-        voc_min_freq: 1
-        voc_file: "test/data/iwslt14/bpe_vocab.txt"
-        tokenizer_type: "subword-nmt"
-        tokenizer_cfg:
-            num_merges: 32000
-            codes: "test/data/iwslt14/bpe.32000"
-            pretokenizer: "none"
-    trg:
         lang: "en"
-        max_length: 62
+        max_length: 100
         lowercase: True
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "test/data/iwslt14/bpe_vocab.txt"
-        tokenizer_type: "subword-nmt"
+        voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_en.txt"
+        tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 32000
-            codes: "test/data/iwslt14/bpe.32000"
+            num_merges: 10000
+            #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_en.10000"
+            model_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_en.10000"
+            pretokenizer: "moses"
+    trg:
+        lang: "ko"
+        max_length: 100
+        lowercase: True
+        normalize: False
+        level: "bpe"
+        voc_min_freq: 1
+        voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_10000.txt"
+        tokenizer_type: "huggingface_bpe"
+        tokenizer_cfg:
+            num_merges: 10000
+            #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_ko.6000"
+            model_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_ko.10000"
             pretokenizer: "none"
 
 testing:
@@ -40,11 +43,11 @@ testing:
     batch_size: 1024
     batch_type: "token"
     max_output_length: 100
-    eval_metrics: ["bleu"]
-    return_prob: "none"
+    eval_metrics: [] # ["bleu", "chrf"]
+    return_prob: "ref" # "none" to enable beamsearch, "ref" then no search needed
     return_attention: False
     sacrebleu_cfg:
-        tokenize: "13a"
+        tokenize: "none"
         lowercase: True
 
 training:
@@ -53,28 +56,29 @@ training:
     optimizer: "adam"
     normalization: "tokens"
     adam_betas: [0.9, 0.98]
-    scheduling: "plateau"
+    scheduling: "warmupinversesquareroot"
+    learning_rate_warmup: 4000
     patience: 5
     decrease_factor: 0.7
     loss: "crossentropy"
-    learning_rate: 0.0003
+    learning_rate: 0.0005
     learning_rate_min: 0.00000001
     weight_decay: 0.0
     label_smoothing: 0.1
     batch_size: 4096
     batch_type: "token"
-    early_stopping_metric: "bleu"
-    early_stopping_patience: 5 # default is 5
+    early_stopping_metric: "ppl" 
+    validation_step_patience: 5 # default is 5
     epochs: 100
-    validation_freq: 1000
-    logging_freq: 100
-    model_dir: "models/transformer_iwslt14_deen_bpe"
+    validation_freq: 10000
+    logging_freq: 1000
+    model_dir: "models/syllable_hf_bpe_10000_ppl"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 0
+    cuda_device: 8
     print_valid_sents: [0, 1, 2, 3, 4]
-    keep_best_ckpts: 5
+    keep_best_ckpts: 1
 
 model:
     initializer: "xavier_uniform"
@@ -82,8 +86,8 @@ model:
     embed_init_gain: 1.0
     init_gain: 1.0
     bias_initializer: "zeros"
-    tied_embeddings: True
-    tied_softmax: True
+    tied_embeddings: False
+    tied_softmax: False
     encoder:
         type: "transformer"
         num_layers: 6

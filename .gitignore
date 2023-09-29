@@ -13,3 +13,6 @@ scripts/orig/*
 
 nohup.out
 */nohup.out
+.joey
+./data/*
+stuff.ipynb

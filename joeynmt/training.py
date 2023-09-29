@@ -628,11 +628,11 @@ class TrainManager:
         if valid_data.random_subset > 0:  # subsample validation set each valid step
             try:
                 valid_data.reset_random_subset()
-                valid_data.sample_random_subset(seed=self.stats.steps)
+                valid_data.sample_random_subset(seed=42)
                 logger.info(
                     "Sample random subset from dev set: n=%d, seed=%d",
                     len(valid_data),
-                    self.stats.steps,
+                    42 #self.stats.steps,
                 )
             except AssertionError as e:
                 logger.warning(e)

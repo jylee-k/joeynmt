@@ -140,6 +140,7 @@ def predict(
     total_nseqs = 0
     total_ntokens = 0
     total_n_correct = 0
+    total_n_generated_tokens = 0
     output, ref_scores, hyp_scores, attention_scores = None, None, None, None
     disable_tqdm = isinstance(data, StreamDataset)
 
@@ -195,6 +196,7 @@ def predict(
                     no_repeat_ngram_size=no_repeat_ngram_size,
                     fp16=fp16,
                 )
+                total_n_generated_tokens += (output.reshape(-1) != model.pad_index).sum().item() # total generated tokens (without padding)
 
             # sort outputs back to original order
             all_outputs.extend(output[sort_reverse_index])  # either hyp or ref
@@ -233,6 +235,12 @@ def predict(
         # exponent of token-level negative log likelihood
         valid_scores["ppl"] = math.exp(total_loss / total_ntokens)
 
+    # average len of generated sequence
+    logger.info(
+        "Average tokens generated per target sequence: %.4f",
+        total_n_generated_tokens / total_nseqs
+    )
+    
     # decode ids back to str symbols (cut-off AFTER eos; eos itself is included.)
     decoded_valid = model.trg_vocab.arrays_to_sentences(arrays=all_outputs,
                                                         cut_at_eos=True)
