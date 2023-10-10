@@ -237,6 +237,12 @@ def predict(
 
     # average len of generated sequence
     logger.info(
+        "Total number of non-padded tokens generated: %.4f",
+        total_n_generated_tokens
+    )
+
+    # average len of generated sequence
+    logger.info(
         "Average tokens generated per target sequence: %.4f",
         total_n_generated_tokens / total_nseqs
     )
