@@ -189,15 +189,15 @@ def train_bpe(
 def train_hf_bpe(
     sents: List[str],
     vocab_size: int,
+    min_freq: int,
     model_file: str,
     vocab_file: str,
 ) -> None:
     """
     Train BPE Model
-    See: https://github.com/rsennrich/subword-nmt/blob/master/subword_nmt/learn_bpe.py
 
     :param sents: sentence list from training set
-    :param num_merges: number of merges.
+    :param vocab_size: final vocabulary size
         Resulting vocabulary size can be slightly smaller or larger.
     :param min_freq: minimum frequency for a token to become part of the vocabulary
     :param codes: codes file. should not exist before bpe training, will be overwritten!
@@ -214,6 +214,7 @@ def train_hf_bpe(
         tokenizer.pre_tokenizer = WhitespaceSplit()
         trainer = BpeTrainer(
             vocab_size=vocab_size,
+            min_frequency=min_freq,
             special_tokens=[BOS_TOKEN, EOS_TOKEN, PAD_TOKEN, UNK_TOKEN],
             continuing_subword_prefix="__",
             end_of_word_suffix="",
@@ -233,7 +234,81 @@ def train_hf_bpe(
         vocab = [x for (x, _) in sorted(tokenizer.get_vocab().items(), key = lambda x: x[1])]
         write_list_to_file(vocab_file, vocab)
 
+def create_tags(
+    vocab_list: list[str]
+) -> List:
+    """
+    Create tags [startswith, endswith] given a list of vocabulary. (currently only for non-compat)
+    
+    0 - i
+    1 - v
+    2 - f
+    3 - wildcard (for non-korean)
+    
+    
+    Example:
+    ㅎㅏㄴ  -> [0,2]
+    ㄱㅜ   -> [0,1]
+    ㄱ     -> [0,0] (or could be [2,2] if it is a jongseong)
+    ㄱㅏ   -> [0,1]
+    aaa   -> [3,3]
+    
+    -Input-
+    vocab_list : sorted vocab list
+    
+    -Output-
+    tag_list : tags list
+    
+    
+    """
+    vocab_size = len(vocab_list)
+    
+    assert vocab_size != 0, "Input is an empty list"
+    
+    print("vocab size: ", vocab_size)
+    
+    tag_list = [] # initialise empty list
+    
+    for i in vocab_list:
+        tag = []
+        # strip continuing word prefix
+        if i.startswith("__"):
+            tok = i.lstrip("__")
+        else:
+            tok = i
+            
+        # check if i, v, f, or wildcard (start)
+        if 0x1100 <= ord(tok[0]) <= 0x1112: #i
+            tag.append(0)
+        elif 0x1161 <= ord(tok[0]) <= 0x1175: #v
+            tag.append(1)
+        elif 0x11A8 <= ord(tok[0]) <= 0x11C2 or ord(tok[0]) == 0x11FF: # f (including filler jongseong ssangnieun)
+            tag.append(2)
+        else:
+            tag.append(3)
+            
+        # check if i, v, f, or wildcard (end)
+        if 0x1100 <= ord(tok[-1]) <= 0x1112: #i
+            tag.append(0)
+        elif 0x1161 <= ord(tok[-1]) <= 0x1175: #v
+            tag.append(1)
+        elif 0x11A8 <= ord(tok[-1]) <= 0x11C2 or ord(tok[0]) == 0x11FF: # f (including filler jongseong ssangnieun)
+            tag.append(2)
+        else:
+            tag.append(3)
+        
+        tag_list.append(tag)
+    
+    return tag_list
 
+def create_masks(
+
+) -> List:
+    """
+    Create 
+    """
+    
+    pass
 
 def save_bpe(
         sents: List[str],
@@ -337,7 +412,11 @@ def run(
                 **tokenizer_cfg,
             )
         elif tokenizer_type == "huggingface_bpe":
-            train_hf_bpe(sents = sents, vocab_size = tokenizer_cfg["num_merges"], model_file = tokenizer_cfg["model_file"], vocab_file = vocab_file)
+            train_hf_bpe(sents = sents, 
+                         vocab_size = tokenizer_cfg["num_merges"], 
+                         min_freq=min_freq,
+                         model_file = tokenizer_cfg["model_file"], 
+                         vocab_file = vocab_file)
         else:
             raise ConfigurationError(f"{tokenizer_type}: Unknown tokenizer type.")
             # TODO: support fastBPE training! https://github.com/glample/fastBPE
@@ -392,7 +471,7 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
 
     src_tuple = _parse_cfg(src_cfg)
     trg_tuple = _parse_cfg(trg_cfg)
-
+    
     if args.joint:
         for s, t in zip(src_tuple[1:], trg_tuple[1:]):
             assert s == t
