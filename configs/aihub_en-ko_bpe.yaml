@@ -29,7 +29,8 @@ data:
         level: "bpe"
         voc_min_freq: 1
         voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_20000.txt"
-        mask_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_20000.pt"
+        mask_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_20000_mask.pt"
+        tag_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_20000_tag.pt"
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
             num_merges: 20000

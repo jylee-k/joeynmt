@@ -196,6 +196,7 @@ def train_hf_bpe(
     model_file: str,
     vocab_file: Path,
     mask_file: Path,
+    tag_file: Path
 ) -> None:
     """
     Train BPE Model
@@ -239,11 +240,12 @@ def train_hf_bpe(
         write_list_to_file(vocab_file, vocab)
         
         if lang == "ko":
-            tag_list = create_tags(vocab)
+            tag_list = create_tags(vocab, tag_file)
             create_masks(tag_list, mask_file)
 
 def create_tags(
-    vocab_list: list[str]
+    vocab_list: list[str],
+    file_path: Path
 ) -> List:
     """
     Create tags [startswith, endswith] given a list of vocabulary. (currently only for non-compat)
@@ -309,6 +311,8 @@ def create_tags(
         tag_list.append(tag)
     
     print("tag list created")
+    tag_tensor = torch.tensor(tag_list, dtype=torch.int32)
+    torch.save(tag_tensor, file_path)
     
     return tag_list
 
@@ -323,21 +327,19 @@ def create_masks(
     vocab_size = len(tag_list)
     
     print("creating mask....")
-    x = torch.zeros((vocab_size,vocab_size))
-    for i in range(vocab_size):
-        for j in range(vocab_size):
-            if tag_list[i][1] == 0: # ends with i
-                if tag_list[j][0] == 1: # must follow with v
-                    x[i][j] = 1
-            elif tag_list[i][1] == 1: # ends with v
-                if tag_list[j][0] == 2: # must follow with f
-                    x[i][j] = 1
-            elif tag_list[i][1] == 2: # ends with f
-                if tag_list[j][0] == 0 or tag_list[j][0] == 3: # must follow with i or w
-                    x[i][j] = 1
-            else: # ends with wildcard
-                if tag_list[j][0] == 0 or tag_list[j][0] == 3: # must follow with i or w
-                    x[i][j] = 1
+    x = torch.zeros((4,vocab_size)) # row for ending of prev token, col for vocab list
+    
+    for j in range(vocab_size):
+        if tag_list[j][0] == 0: # if token starts with i
+            x[2][j] = 1 # prev token must end with f or w
+            x[3][j] = 1
+        elif tag_list[j][0] == 1: # if token starts with v
+            x[0][j] = 1 # prev token must end with i
+        elif tag_list[j][0] == 2: # if token starts with f
+            x[1][j] = 1 # prev token must end with v
+        else: # if token starts with w
+            x[2][j] = 1 # prev token must end with f or w
+            x[3][j] = 1
     
     torch.save(x, file_path)
     print("mask saved to ", file_path)
@@ -383,6 +385,7 @@ def run(
     max_size: int,
     vocab_file: Path,
     mask_file: Path,
+    tag_file: Path,
     tokenizer_type: str,
     tokenizer_cfg: Dict,
 ):
@@ -452,7 +455,9 @@ def run(
                          min_freq=min_freq,
                          model_file = tokenizer_cfg["model_file"], 
                          vocab_file = vocab_file,
-                         mask_file = mask_file)
+                         mask_file = mask_file,
+                         tag_file=tag_file
+                         )
         else:
             raise ConfigurationError(f"{tokenizer_type}: Unknown tokenizer type.")
             # TODO: support fastBPE training! https://github.com/glample/fastBPE
@@ -502,9 +507,10 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
         max_size = int(cfg.get("voc_limit", sys.maxsize))
         voc_file = Path(cfg.get("voc_file", "vocab.txt"))
         mask_file = Path(cfg.get("mask_file", "x.pt"))
+        tag_file = Path(cfg.get("tag_file", "t.pt"))
         tok_type = cfg.get("tokenizer_type", "sentencepiece")
         tok_cfg = cfg.get("tokenizer_cfg", {})
-        return lang, level, min_freq, max_size, voc_file, mask_file, tok_type, tok_cfg
+        return lang, level, min_freq, max_size, voc_file, mask_file, tag_file, tok_type, tok_cfg
 
     src_tuple = _parse_cfg(src_cfg)
     trg_tuple = _parse_cfg(trg_cfg)
@@ -526,7 +532,7 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
     #     )
 
     # else:
-    for lang, level, min_freq, max_size, voc_file, mask_file, tok_type, tok_cfg in [
+    for lang, level, min_freq, max_size, voc_file, mask_file, tag_file, tok_type, tok_cfg in [
             src_tuple,
             trg_tuple,
     ]:
@@ -539,6 +545,7 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
             max_size=max_size,
             vocab_file=voc_file,
             mask_file=mask_file,
+            tag_file=tag_file,
             tokenizer_type=tok_type,
             tokenizer_cfg=tok_cfg,
         )
