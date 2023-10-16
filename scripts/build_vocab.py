@@ -19,6 +19,8 @@ from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace, WhitespaceSplit
 from tokenizers.normalizers import Lowercase
 
+import torch
+
 from joeynmt.constants import (
     BOS_ID,
     BOS_TOKEN,
@@ -188,10 +190,12 @@ def train_bpe(
 
 def train_hf_bpe(
     sents: List[str],
+    lang: str,
     vocab_size: int,
     min_freq: int,
     model_file: str,
-    vocab_file: str,
+    vocab_file: Path,
+    mask_file: Path,
 ) -> None:
     """
     Train BPE Model
@@ -233,6 +237,10 @@ def train_hf_bpe(
 
         vocab = [x for (x, _) in sorted(tokenizer.get_vocab().items(), key = lambda x: x[1])]
         write_list_to_file(vocab_file, vocab)
+        
+        if lang == "ko":
+            tag_list = create_tags(vocab)
+            create_masks(tag_list, mask_file)
 
 def create_tags(
     vocab_list: list[str]
@@ -257,7 +265,7 @@ def create_tags(
     vocab_list : sorted vocab list
     
     -Output-
-    tag_list : tags list
+    tag_list : tag list
     
     
     """
@@ -266,6 +274,7 @@ def create_tags(
     assert vocab_size != 0, "Input is an empty list"
     
     print("vocab size: ", vocab_size)
+    print("creating tag list....")
     
     tag_list = [] # initialise empty list
     
@@ -292,24 +301,48 @@ def create_tags(
             tag.append(0)
         elif 0x1161 <= ord(tok[-1]) <= 0x1175: #v
             tag.append(1)
-        elif 0x11A8 <= ord(tok[-1]) <= 0x11C2 or ord(tok[0]) == 0x11FF: # f (including filler jongseong ssangnieun)
+        elif 0x11A8 <= ord(tok[-1]) <= 0x11C2 or ord(tok[-1]) == 0x11FF: # f (including filler jongseong ssangnieun)
             tag.append(2)
         else:
             tag.append(3)
         
         tag_list.append(tag)
     
+    print("tag list created")
+    
     return tag_list
 
 def create_masks(
+    tag_list : list[list[int]],
+    file_path : Path
 
-) -> List:
+) -> None:
     """
-    Create 
+    Create mask and save as pytorch tensor
     """
+    vocab_size = len(tag_list)
     
-    pass
-
+    print("creating mask....")
+    x = torch.zeros((vocab_size,vocab_size))
+    for i in range(vocab_size):
+        for j in range(vocab_size):
+            if tag_list[i][1] == 0: # ends with i
+                if tag_list[j][0] == 1: # must follow with v
+                    x[i][j] = 1
+            elif tag_list[i][1] == 1: # ends with v
+                if tag_list[j][0] == 2: # must follow with f
+                    x[i][j] = 1
+            elif tag_list[i][1] == 2: # ends with f
+                if tag_list[j][0] == 0 or tag_list[j][0] == 3: # must follow with i or w
+                    x[i][j] = 1
+            else: # ends with wildcard
+                if tag_list[j][0] == 0 or tag_list[j][0] == 3: # must follow with i or w
+                    x[i][j] = 1
+    
+    torch.save(x, file_path)
+    print("mask saved to ", file_path)
+    
+    
 def save_bpe(
         sents: List[str],
         vocab_file: str,
@@ -349,6 +382,7 @@ def run(
     min_freq: int,
     max_size: int,
     vocab_file: Path,
+    mask_file: Path,
     tokenizer_type: str,
     tokenizer_cfg: Dict,
 ):
@@ -413,10 +447,12 @@ def run(
             )
         elif tokenizer_type == "huggingface_bpe":
             train_hf_bpe(sents = sents, 
+                         lang = langs[0],
                          vocab_size = tokenizer_cfg["num_merges"], 
                          min_freq=min_freq,
                          model_file = tokenizer_cfg["model_file"], 
-                         vocab_file = vocab_file)
+                         vocab_file = vocab_file,
+                         mask_file = mask_file)
         else:
             raise ConfigurationError(f"{tokenizer_type}: Unknown tokenizer type.")
             # TODO: support fastBPE training! https://github.com/glample/fastBPE
@@ -465,45 +501,47 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
         min_freq = cfg.get("voc_min_freq", 1)
         max_size = int(cfg.get("voc_limit", sys.maxsize))
         voc_file = Path(cfg.get("voc_file", "vocab.txt"))
+        mask_file = Path(cfg.get("mask_file", "x.pt"))
         tok_type = cfg.get("tokenizer_type", "sentencepiece")
         tok_cfg = cfg.get("tokenizer_cfg", {})
-        return lang, level, min_freq, max_size, voc_file, tok_type, tok_cfg
+        return lang, level, min_freq, max_size, voc_file, mask_file, tok_type, tok_cfg
 
     src_tuple = _parse_cfg(src_cfg)
     trg_tuple = _parse_cfg(trg_cfg)
     
-    if args.joint:
-        for s, t in zip(src_tuple[1:], trg_tuple[1:]):
-            assert s == t
+    # if args.joint:
+    #     for s, t in zip(src_tuple[1:], trg_tuple[1:]):
+    #         assert s == t
 
+    #     run(
+    #         args,
+    #         train_data=train_data,
+    #         langs=[src_tuple[0], trg_tuple[0]],
+    #         level=src_tuple[1],
+    #         min_freq=src_tuple[2],
+    #         max_size=src_tuple[3],
+    #         vocab_file=src_tuple[4],
+    #         tokenizer_type=src_tuple[5],
+    #         tokenizer_cfg=src_tuple[6],
+    #     )
+
+    # else:
+    for lang, level, min_freq, max_size, voc_file, mask_file, tok_type, tok_cfg in [
+            src_tuple,
+            trg_tuple,
+    ]:
         run(
             args,
             train_data=train_data,
-            langs=[src_tuple[0], trg_tuple[0]],
-            level=src_tuple[1],
-            min_freq=src_tuple[2],
-            max_size=src_tuple[3],
-            vocab_file=src_tuple[4],
-            tokenizer_type=src_tuple[5],
-            tokenizer_cfg=src_tuple[6],
+            langs=[lang],
+            level=level,
+            min_freq=min_freq,
+            max_size=max_size,
+            vocab_file=voc_file,
+            mask_file=mask_file,
+            tokenizer_type=tok_type,
+            tokenizer_cfg=tok_cfg,
         )
-
-    else:
-        for lang, level, min_freq, max_size, voc_file, tok_type, tok_cfg in [
-                src_tuple,
-                trg_tuple,
-        ]:
-            run(
-                args,
-                train_data=train_data,
-                langs=[lang],
-                level=level,
-                min_freq=min_freq,
-                max_size=max_size,
-                vocab_file=voc_file,
-                tokenizer_type=tok_type,
-                tokenizer_cfg=tok_cfg,
-            )
 
 
 if __name__ == "__main__":

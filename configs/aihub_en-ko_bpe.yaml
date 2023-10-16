@@ -14,12 +14,12 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_en.txt"
+        voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_en_20000.txt"
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 10000
+            num_merges: 20000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_en.10000"
-            model_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_en.10000"
+            model_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_en.20000"
             pretokenizer: "moses"
     trg:
         lang: "ko"
@@ -28,12 +28,13 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_10000.txt"
+        voc_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_20000.txt"
+        mask_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_vocab_ko_20000.pt"
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 10000
+            num_merges: 20000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_ko.6000"
-            model_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_ko.10000"
+            model_file: "../../data/aihub_en-ko/processed/data/spaced/syllable/hf_bpe_ko.20000"
             pretokenizer: "none"
 
 testing:
@@ -72,11 +73,11 @@ training:
     epochs: 100
     validation_freq: 10000
     logging_freq: 1000
-    model_dir: "models/syllable_hf_bpe_10000_ppl"
+    model_dir: "models/syllable_hf_bpe_20000_20000_ppl"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 8
+    cuda_device: 7
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
 
