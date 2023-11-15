@@ -45,6 +45,8 @@ def predict(
     data: Dataset,
     device: torch.device,
     n_gpu: int,
+    tag_file: Path,
+    mask_file: Path,
     compute_loss: bool = False,
     normalization: str = "batch",
     num_workers: int = 0,
@@ -127,6 +129,10 @@ def predict(
         pad_index=model.pad_index,
         device=device,
     )
+    
+    # load tag list and mask tensors
+    token_tags = torch.load(tag_file)
+    token_masks = torch.load(mask_file)
 
     # disable dropout
     model.eval()
@@ -195,6 +201,8 @@ def predict(
                     repetition_penalty=repetition_penalty,
                     no_repeat_ngram_size=no_repeat_ngram_size,
                     fp16=fp16,
+                    token_tags=token_tags,
+                    token_masks=token_masks,
                 )
                 total_n_generated_tokens += (output.reshape(-1) != model.pad_index).sum().item() # total generated tokens (without padding)
 
@@ -237,7 +245,7 @@ def predict(
 
     # average len of generated sequence
     logger.info(
-        "Total number of non-padded tokens generated: %.4f",
+        "Total number of non-padded tokens generated: %d",
         total_n_generated_tokens
     )
 
@@ -370,6 +378,9 @@ def test(
         normalization,
         fp16,
     ) = parse_train_args(cfg["training"], mode="prediction")
+    
+    tag_file = cfg["data"]["trg"]["tag_file"]
+    mask_file = cfg["data"]["trg"]["mask_file"]
 
     if len(logger.handlers) == 0:
         pkg_version = make_logger(model_dir, mode="test")  # version string returned
@@ -451,6 +462,8 @@ def test(
                 normalization=normalization,
                 cfg=cfg["testing"],
                 fp16=fp16,
+                tag_file=tag_file,
+                mask_file=mask_file,
             )
 
             if save_attention:

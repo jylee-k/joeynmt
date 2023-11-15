@@ -206,6 +206,10 @@ class TrainManager:
         self.valid_cfg["generate_unk"] = True
         self.valid_cfg["repetition_penalty"] = -1  # turn off
         self.valid_cfg["no_repeat_ngram_size"] = -1  # turn off
+        
+        # load tag list and mask tensors
+        self.token_tags = torch.load(cfg["data"]["trg"]["tag_file"])
+        self.token_masks = torch.load(cfg["data"]["trg"]["mask_file"])
 
     def _save_checkpoint(self, new_best: bool, score: float) -> None:
         """
@@ -601,7 +605,9 @@ class TrainManager:
         ):
             # get loss (run as during training with teacher forcing)
             batch_loss, _, _, correct_tokens = self.model(
-                return_type="loss", **vars(batch)
+                return_type="loss", **vars(batch),
+                token_masks=self.token_masks,
+                token_tags=self.token_tags
             )
 
         # normalize batch loss

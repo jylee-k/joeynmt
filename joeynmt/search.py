@@ -14,6 +14,8 @@ from joeynmt.decoders import RecurrentDecoder, TransformerDecoder
 from joeynmt.helpers import tile
 from joeynmt.model import Model
 
+from pathlib import Path
+
 __all__ = ["greedy", "beam_search", "search"]
 
 
@@ -284,6 +286,10 @@ def transformer_greedy(
     assert output.shape[0] == batch_size, (output.shape, batch_size)
     return output, scores, attention
 
+def get_tensor_from_file(file_path: Path):
+    tensor = torch.load(file_path)
+    return tensor
+
 
 def beam_search(
     model: Model,
@@ -334,11 +340,16 @@ def beam_search(
     repetition_penalty: float = kwargs.get("repetition_penalty", -1)
     no_repeat_ngram_size: int = kwargs.get("no_repeat_ngram_size", -1)
     encoder_input: Tensor = kwargs.get("encoder_input", None)  # for repetition blocker
+    token_masks : Tensor = kwargs.get("token_masks", None)
+    token_tags : Tensor = kwargs.get("token_tags", None)
 
     trg_vocab_size = model.decoder.output_size
     device = encoder_output.device
     fp16: bool = kwargs.get("fp16", False)
     is_transformer = isinstance(model.decoder, TransformerDecoder)
+    
+    token_masks = token_masks.to(device)
+    token_tags = token_tags.to(device)
 
     att_vectors = None  # for RNN only, not used for Transformer
     hidden = None  # for RNN only, not used for Transformer
@@ -390,7 +401,7 @@ def beam_search(
                                dtype=torch.long,
                                device=device)
 
-    # keeps track of the top beam size hypotheses to expand for each element in the
+    # keeps track of the top beam_ssize hypotheses to expand for each element in the
     # batch to be further decoded (that are still "alive")
     # `alive_seq` shape: (batch_size * beam_size, hyp_len) ... now hyp_len = 1
     alive_seq = torch.full((batch_size * beam_size, 1),
@@ -440,7 +451,8 @@ def beam_search(
 
             # For the Transformer we made predictions for all time steps up to this
             # point, so we only want to know about the last time step.
-            logits = logits[:, -1]
+            # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
+            logits = logits[:, -1] # multiply this by the mask
             hidden = None
         else:
             # For Recurrent models, only feed the previous trg word prediction
@@ -461,9 +473,30 @@ def beam_search(
                         trg_mask=None,  # subsequent mask for Transformer only
                     )
 
+
+        # with the mask generated during vocab generation for invalid tokens
+        # mask shape: (4, trg_vocab)
+        last_step = alive_seq[:, -1].view(-1, 1)
+        # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
+        for sent in range(last_step.size(dim=0)):
+            # get which type of token was in the previous time step i.e. what it ends with (i, v, f or w)
+            end_type = token_tags[last_step[sent, :].item(), 1].item()
+            # set all invalid token indices to -inf
+            logits[sent][token_masks[end_type]] = float("-inf")
+        
         # compute log probability distribution over trg vocab
         # `log_probs` shape: (remaining_batch_size * beam_size, trg_vocab)
         log_probs = F.log_softmax(logits, dim=-1).squeeze(1)
+        
+        # # multiply by mask generated during vocab generation for invalid tokens (=add logprobs)
+        # # mask shape: (1, trg_vocab)
+        # last_step = alive_seq[:, -1].view(-1, 1)
+        # for idx in range(last_step.size(dim=0)):
+        #     log_probs[idx, :] += token_masks[token_tags[last_step[idx, :].item(), 1].item(), :]
+        
+        if step > 0:  
+            log_probs = log_probs 
+        
         if not generate_unk:
             log_probs[:, unk_index] = float("-inf")
 

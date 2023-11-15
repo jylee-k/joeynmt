@@ -331,15 +331,25 @@ def create_masks(
     
     for j in range(vocab_size):
         if tag_list[j][0] == 0: # if token starts with i
-            x[2][j] = 1 # prev token must end with f or w
-            x[3][j] = 1
+            x[0][j] = float("-inf") # prev token must end with f or w
+            x[1][j] = float("-inf")
+            # x[2][j] = 1 # prev token must end with f or w
+            # x[3][j] = 1
         elif tag_list[j][0] == 1: # if token starts with v
-            x[0][j] = 1 # prev token must end with i
+            # x[0][j] = 1 # prev token must end with i
+            x[1][j] = float("-inf")
+            x[2][j] = float("-inf") 
+            x[3][j] = float("-inf")
         elif tag_list[j][0] == 2: # if token starts with f
-            x[1][j] = 1 # prev token must end with v
+            x[0][j] = float("-inf")
+            # x[1][j] = 1 # prev token must end with v
+            x[2][j] = float("-inf") 
+            x[3][j] = float("-inf")
         else: # if token starts with w
-            x[2][j] = 1 # prev token must end with f or w
-            x[3][j] = 1
+            x[0][j] = float("-inf")
+            x[1][j] = float("-inf")
+            # x[2][j] = 1 # prev token must end with f or w
+            # x[3][j] = 1
     
     torch.save(x, file_path)
     print("mask saved to ", file_path)

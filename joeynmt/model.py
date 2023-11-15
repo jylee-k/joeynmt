@@ -94,6 +94,11 @@ class Model(nn.Module):
             assert "trg" in kwargs and "trg_mask" in kwargs  # need trg to compute loss
 
             out, _, att_probs, _ = self._encode_decode(**kwargs)
+            
+            # kwargs["token_masks"]
+            # kwargs["token_tags"]
+            
+            # kwargs["trg"] # ground truth incl. EOS
 
             # compute log probs
             log_probs = F.log_softmax(out, dim=-1)
