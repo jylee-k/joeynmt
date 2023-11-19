@@ -154,6 +154,14 @@ class BaseDataset(Dataset):
         else:
             assert all(t is None for t in trg_list)
             trg, trg_length = None, None
+            
+        # load tag list and mask tensors
+        if self.split == "train":
+            token_tags = torch.load(self.tag_file)
+            token_masks = torch.load(self.mask_file)
+        else:
+            token_tags = None
+            token_masks = None
 
         return Batch(
             src=torch.tensor(src).long(),
@@ -164,6 +172,8 @@ class BaseDataset(Dataset):
             pad_index=pad_index,
             has_trg=self.has_trg,
             is_train=self.split == "train",
+            token_masks=token_masks,
+            token_tags=token_tags,
         )
 
     def make_iter(
@@ -260,6 +270,7 @@ class PlaintextDataset(BaseDataset):
             tokenizer=tokenizer,
             sequence_encoder=sequence_encoder,
             random_subset=random_subset,
+            
         )
 
         # load data
@@ -268,7 +279,14 @@ class PlaintextDataset(BaseDataset):
 
         # for random subsampling
         self.idx_map = []
-
+        
+        # pass in mask and tag paths
+        if split == "train":
+            self.tag_file=kwargs["tag_file"]
+            self.mask_file=kwargs["mask_file"]
+        else:
+            self.tag_file=None
+            self.mask_file=None
     def load_data(self, path: str, **kwargs) -> Any:
 
         def _pre_process(seq, lang):

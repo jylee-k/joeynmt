@@ -45,8 +45,8 @@ def predict(
     data: Dataset,
     device: torch.device,
     n_gpu: int,
-    tag_file: Path,
-    mask_file: Path,
+    tag_file: Path = "",
+    mask_file: Path = "",
     compute_loss: bool = False,
     normalization: str = "batch",
     num_workers: int = 0,
@@ -98,6 +98,7 @@ def predict(
         generate_unk,
         repetition_penalty,
         no_repeat_ngram_size,
+        masked
     ) = parse_test_args(cfg)
 
     if return_prob == "ref":  # no decoding needed
@@ -129,10 +130,13 @@ def predict(
         pad_index=model.pad_index,
         device=device,
     )
-    
-    # load tag list and mask tensors
-    token_tags = torch.load(tag_file)
-    token_masks = torch.load(mask_file)
+    if masked:
+        # load tag list and mask tensors
+        token_tags = torch.load(tag_file)
+        token_masks = torch.load(mask_file)
+    else:
+        token_tags = None
+        token_masks = None
 
     # disable dropout
     model.eval()

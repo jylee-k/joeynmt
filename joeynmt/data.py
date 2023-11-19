@@ -50,6 +50,9 @@ def load_data(
     train_path = data_cfg.get("train", None)
     dev_path = data_cfg.get("dev", None)
     test_path = data_cfg.get("test", None)
+    
+    tag_file = data_cfg["trg"]["tag_file"]
+    mask_file = data_cfg["trg"]["mask_file"]
 
     if train_path is None and dev_path is None and test_path is None:
         raise ValueError("Please specify at least one data source path.")
@@ -78,6 +81,8 @@ def load_data(
             split="train",
             tokenizer=tokenizer,
             random_subset=train_subset,
+            tag_file=tag_file,
+            mask_file=mask_file,
             **dataset_cfg,
         )
 

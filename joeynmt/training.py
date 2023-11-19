@@ -86,6 +86,7 @@ class TrainManager:
             reset_scheduler,
             reset_optimizer,
             reset_iter_state,
+            theta # penalty factor for logits for invalid tokens before softmax
         ) = parse_train_args(cfg["training"])
 
         # logging and storing
@@ -210,6 +211,9 @@ class TrainManager:
         # load tag list and mask tensors
         self.token_tags = torch.load(cfg["data"]["trg"]["tag_file"])
         self.token_masks = torch.load(cfg["data"]["trg"]["mask_file"])
+        
+        # set theta for training penalty
+        self.theta = theta
 
     def _save_checkpoint(self, new_best: bool, score: float) -> None:
         """
@@ -606,8 +610,7 @@ class TrainManager:
             # get loss (run as during training with teacher forcing)
             batch_loss, _, _, correct_tokens = self.model(
                 return_type="loss", **vars(batch),
-                token_masks=self.token_masks,
-                token_tags=self.token_tags
+                theta=self.theta,
             )
 
         # normalize batch loss
@@ -847,6 +850,10 @@ def train(cfg_file: str, skip_test: bool = False) -> None:
 
     # store copy of original training config in model dir
     shutil.copy2(cfg_file, (model_dir / "config.yaml").as_posix())
+    
+    # store copy of original masks and tags
+    shutil.copy2(cfg["data"]["trg"]["mask_file"], (model_dir / cfg["data"]["trg"]["mask_file"].split("/")[-1]).as_posix())
+    shutil.copy2(cfg["data"]["trg"]["tag_file"], (model_dir / cfg["data"]["trg"]["tag_file"].split("/")[-1]).as_posix())
 
     # set the random seed
     set_seed(seed=cfg["training"].get("random_seed", 42))

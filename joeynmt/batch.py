@@ -29,6 +29,8 @@ class Batch:
         trg: Optional[Tensor],
         trg_length: Optional[Tensor],
         device: torch.device,
+        token_tags: Tensor,
+        token_masks: Tensor,
         pad_index: int = PAD_ID,
         has_trg: bool = True,
         is_train: bool = True,
@@ -69,6 +71,24 @@ class Batch:
             # we exclude the padded areas (and blank areas) from the loss computation
             self.trg_mask: Tensor = (self.trg != pad_index).unsqueeze(1)
             self.ntokens: int = (self.trg != pad_index).data.sum().item()
+            
+            # generating mask tensor
+            # self.token_tags: Tensor = token_tags
+            # self.token_masks: Tensor = token_masks
+            if token_tags is not None and token_masks is not None:
+                batch_size,seq_length = self.trg_input.shape
+                vocab_size = token_tags.shape[0]
+                
+                tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
+                
+                trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
+                
+                self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
+                for b in range(batch_size):
+                    for s in range(seq_length):
+                        self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
+            else:
+                self.mask_tensor = None
 
         if device.type == "cuda":
             self._make_cuda(device)
@@ -87,6 +107,8 @@ class Batch:
             self.trg = self.trg.to(device)
             self.trg_length = self.trg_length.to(device)
             self.trg_mask = self.trg_mask.to(device)
+            if self.mask_tensor is not None:
+                self.mask_tensor = self.mask_tensor.to(device)
 
     def normalize(
         self,

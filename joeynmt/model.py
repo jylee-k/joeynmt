@@ -95,11 +95,11 @@ class Model(nn.Module):
 
             out, _, att_probs, _ = self._encode_decode(**kwargs)
             
-            # kwargs["token_masks"]
-            # kwargs["token_tags"]
+            if self.training: # if model is in training mode
+                if kwargs["theta"] > 1.0: # if theta = 1.0, skip the penalty calculation
+                    # kwargs["mask_tensor"] shape (batch_size, seq_length, vocab_size)
+                    out[kwargs["mask_tensor"]] /= kwargs["theta"]
             
-            # kwargs["trg"] # ground truth incl. EOS
-
             # compute log probs
             log_probs = F.log_softmax(out, dim=-1)
 

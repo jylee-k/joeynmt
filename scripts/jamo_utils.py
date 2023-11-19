@@ -200,7 +200,7 @@ def non_compat_to_compat(jamos):
         elif ord(char) == 0x115F: # check for orphaned jamo
             compat_jamos += chr(0x3164) # substitute for filler
         elif ord(char) == 0x11FF: # check for SSANGNIEUN (indicates a <nil> jongseong)
-            compat_jamos += '' # substitute for empty string
+            compat_jamos += "" # substitute for SSANGNIEUN chr(0x3165)
         else: # non-jamo characters
             compat_jamos += char
         
@@ -222,7 +222,7 @@ def decompose_compat(text):
     compat_jamos = non_compat_to_compat(jamos)
     return compat_jamos
 
-def recompose_compat(compat_jamos):
+def recompose_compat(compat_jamos: str):
     
     """Recomposes a human-readable Korean text from a Hangul Compatibility Jamo (Ux3131 ~ Ux318E) sequence
 
@@ -237,6 +237,8 @@ def recompose_compat(compat_jamos):
     state = 0
     buffer = ['','','']
     text = ""
+    
+    # compat_jamos = compat_jamos.replace(chr(0x3165), "")
     
     for c in range(len(compat_jamos)):
         if state == 0: # buffer is empty

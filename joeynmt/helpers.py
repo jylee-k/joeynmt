@@ -312,6 +312,9 @@ def parse_train_args(cfg: Dict, mode: str = "training") -> Tuple:
     reset_scheduler = cfg.get("reset_scheduler", False)
     reset_optimizer = cfg.get("reset_optimizer", False)
     reset_iter_state = cfg.get("reset_iter_state", False)
+    
+    # get theta
+    theta = cfg.get("theta", 1.0)
 
     return (
         model_dir,
@@ -343,6 +346,7 @@ def parse_train_args(cfg: Dict, mode: str = "training") -> Tuple:
         reset_scheduler,
         reset_optimizer,
         reset_iter_state,
+        theta,
     )
 
 
@@ -418,6 +422,8 @@ def parse_test_args(cfg: Dict) -> Tuple:
             "Repetition penalty must be > 1. (-1 indicates no repetition penalty.)"
         )
     no_repeat_ngram_size: int = cfg.get("no_repeat_ngram_size", -1)
+    
+    masked: bool = cfg.get("masked", False)
 
     return (
         batch_size,
@@ -434,6 +440,7 @@ def parse_test_args(cfg: Dict) -> Tuple:
         generate_unk,
         repetition_penalty,
         no_repeat_ngram_size,
+        masked,
     )
 
 
