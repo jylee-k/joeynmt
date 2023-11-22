@@ -213,7 +213,7 @@ class TrainManager:
         self.token_masks = torch.load(cfg["data"]["trg"]["mask_file"])
         
         # set theta for training penalty
-        self.theta = theta
+        self.theta = torch.tensor(theta, dtype=self.dtype).to(self.device)
 
     def _save_checkpoint(self, new_best: bool, score: float) -> None:
         """
@@ -371,7 +371,7 @@ class TrainManager:
         """
         assert path is not None
         layer_state_dict = OrderedDict()
-        logger.info("Loading %s laysers from %s", layer, path)
+        logger.info("Loading %s layers from %s", layer, path)
         ckpt = load_checkpoint(path=path, device=self.device)
         for k, v in ckpt["model_state"].items():
             if k.startswith(layer):

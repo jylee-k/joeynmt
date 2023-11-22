@@ -54,7 +54,7 @@ testing:
     masked: False # masked inference, set False during training, True during inference with beam search
 
 training:
-    #load_model: "models/transformer_iwslt14_deen_bpe/best.ckpt"
+    # load_model: "models/non-compat_hf_bpe_10000_ppl_masked_1.5_fixed/best.ckpt"
     random_seed: 42
     optimizer: "adam"
     normalization: "tokens"
@@ -70,19 +70,20 @@ training:
     label_smoothing: 0.1
     batch_size: 4096
     batch_type: "token"
+    batch_multiplier: 1
     early_stopping_metric: "ppl" 
     validation_step_patience: 5 # default is 5
     epochs: 100
     validation_freq: 10000
     logging_freq: 1000
-    model_dir: "models/non-compat_hf_bpe_10000_ppl_masked_4.0"
+    model_dir: "models/non-compat_10000_masked_1.0_view"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 6
+    cuda_device: 1
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
-    theta: 4.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
+    theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
 
 model:
     initializer: "xavier_uniform"

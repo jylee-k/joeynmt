@@ -79,14 +79,15 @@ class Batch:
                 batch_size,seq_length = self.trg_input.shape
                 vocab_size = token_tags.shape[0]
                 
-                tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
+                # tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
                 
-                trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
+                # trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
                 
-                self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
-                for b in range(batch_size):
-                    for s in range(seq_length):
-                        self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
+                # self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
+                # for b in range(batch_size):
+                #     for s in range(seq_length):
+                #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
+                self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].view(batch_size, seq_length, vocab_size)
             else:
                 self.mask_tensor = None
 

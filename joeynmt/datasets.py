@@ -157,7 +157,7 @@ class BaseDataset(Dataset):
             
         # load tag list and mask tensors
         if self.split == "train":
-            token_tags = torch.load(self.tag_file)
+            token_tags = torch.load(self.tag_file)[:,1]
             token_masks = torch.load(self.mask_file)
         else:
             token_tags = None
