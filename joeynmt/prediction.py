@@ -37,7 +37,7 @@ from joeynmt.search import search
 from joeynmt.tokenizers import build_tokenizer
 from joeynmt.vocabulary import build_vocab
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('joeynmt')
 
 
 def predict(

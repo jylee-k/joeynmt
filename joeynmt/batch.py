@@ -11,7 +11,7 @@ from torch import Tensor
 
 from joeynmt.constants import PAD_ID
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('joeynmt')
 
 
 class Batch:
@@ -87,7 +87,8 @@ class Batch:
                 # for b in range(batch_size):
                 #     for s in range(seq_length):
                 #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
-                self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].view(batch_size, seq_length, vocab_size)
+                # self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
+                self.mask_tensor = torch.ones((batch_size, seq_length, vocab_size), dtype=bool) # cheap mask for testing
             else:
                 self.mask_tensor = None
 

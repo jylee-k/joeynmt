@@ -23,7 +23,7 @@ from joeynmt.constants import PAD_ID
 from joeynmt.helpers import ConfigurationError, read_list_from_file
 from joeynmt.tokenizers import BasicTokenizer
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('joeynmt')
 CPU_DEVICE = torch.device("cpu")
 
 
@@ -156,7 +156,7 @@ class BaseDataset(Dataset):
             trg, trg_length = None, None
             
         # load tag list and mask tensors
-        if self.split == "train":
+        if self.split == "train" and self.tag_file is not None and self.mask_file is not None:
             token_tags = torch.load(self.tag_file)[:,1]
             token_masks = torch.load(self.mask_file)
         else:

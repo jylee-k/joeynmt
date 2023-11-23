@@ -10,7 +10,7 @@ from joeynmt.datasets import BaseDataset, build_dataset
 from joeynmt.tokenizers import build_tokenizer
 from joeynmt.vocabulary import Vocabulary, build_vocab
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('joeynmt')
 
 
 def load_data(
@@ -51,8 +51,8 @@ def load_data(
     dev_path = data_cfg.get("dev", None)
     test_path = data_cfg.get("test", None)
     
-    tag_file = data_cfg["trg"]["tag_file"]
-    mask_file = data_cfg["trg"]["mask_file"]
+    tag_file = data_cfg["trg"].get("tag_file", None)
+    mask_file = data_cfg["trg"].get("mask_file", None)
 
     if train_path is None and dev_path is None and test_path is None:
         raise ValueError("Please specify at least one data source path.")

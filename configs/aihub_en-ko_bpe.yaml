@@ -29,8 +29,8 @@ data:
         level: "bpe"
         voc_min_freq: 1
         voc_file: "models/non-compat_hf_bpe_10000_ppl/trg_vocab.txt"
-        mask_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_vocab_ko_10000_mask_bool.pt"
-        tag_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_vocab_ko_10000_tag.pt"
+        mask_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_vocab_ko_10000_mask_bool.pt" # comment for no masking
+        tag_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_vocab_ko_10000_tag.pt" # comment for no masking
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
             num_merges: 10000
@@ -73,14 +73,14 @@ training:
     batch_multiplier: 1
     early_stopping_metric: "ppl" 
     validation_step_patience: 5 # default is 5
-    epochs: 100
+    epochs: 5
     validation_freq: 10000
     logging_freq: 1000
-    model_dir: "models/non-compat_10000_masked_1.0_view"
+    model_dir: "models/non-compat_10000_cheap_mask"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 1
+    cuda_device: 5
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
     theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
@@ -93,6 +93,7 @@ model:
     bias_initializer: "zeros"
     tied_embeddings: False
     tied_softmax: False
+    use_compile: False # use model = torch.compile(model)
     encoder:
         type: "transformer"
         num_layers: 6

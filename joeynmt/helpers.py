@@ -62,7 +62,7 @@ def make_logger(log_dir: Path = None, mode: str = "train") -> str:
     :param mode: log file name. 'train', 'test' or 'translate'
     :return: joeynmt version number
     """
-    logger = logging.getLogger("")  # root logger
+    logger = logging.getLogger('joeynmt')  # root logger
     version = pkg_resources.require("joeynmt")[0].version
 
     # add handlers only once.
@@ -115,7 +115,7 @@ def log_cfg(cfg: Dict, prefix: str = "cfg") -> None:
     :param cfg: configuration to log
     :param prefix: prefix for logging
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('joeynmt')
     for k, v in cfg.items():
         if isinstance(v, dict):
             p = ".".join([prefix, k])

@@ -37,7 +37,7 @@ from joeynmt.helpers import (
 from joeynmt.model import Model, _DataParallel, build_model
 from joeynmt.prediction import predict, test
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('joeynmt')
 
 
 class TrainManager:
@@ -208,12 +208,16 @@ class TrainManager:
         self.valid_cfg["repetition_penalty"] = -1  # turn off
         self.valid_cfg["no_repeat_ngram_size"] = -1  # turn off
         
-        # load tag list and mask tensors
-        self.token_tags = torch.load(cfg["data"]["trg"]["tag_file"])
-        self.token_masks = torch.load(cfg["data"]["trg"]["mask_file"])
+        # # load tag list and mask tensors
+        # self.token_tags = torch.load(cfg["data"]["trg"]["tag_file"])
+        # self.token_masks = torch.load(cfg["data"]["trg"]["mask_file"])
         
         # set theta for training penalty
         self.theta = torch.tensor(theta, dtype=self.dtype).to(self.device)
+        
+        # compile model
+        if cfg["model"]["use_compile"]:
+            self.model = torch.compile(self.model)
 
     def _save_checkpoint(self, new_best: bool, score: float) -> None:
         """
@@ -774,9 +778,9 @@ class TrainManager:
             # tokenized text
             tokenized_src = data.get_item(idx=p, lang=data.src_lang)
             tokenized_trg = data.get_item(idx=p, lang=data.trg_lang)
-            logger.debug("\tTokenized source:     %s", tokenized_src)
-            logger.debug("\tTokenized reference:  %s", tokenized_trg)
-            logger.debug("\tTokenized hypothesis: %s", hypotheses_raw[p])
+            logger.info("\tTokenized source:     %s", tokenized_src)
+            logger.info("\tTokenized reference:  %s", tokenized_trg)
+            logger.info("\tTokenized hypothesis: %s", hypotheses_raw[p])
 
             # detokenized text
             detokenized_src = data.tokenizer[data.src_lang].post_process(data.src[p])
@@ -852,8 +856,12 @@ def train(cfg_file: str, skip_test: bool = False) -> None:
     shutil.copy2(cfg_file, (model_dir / "config.yaml").as_posix())
     
     # store copy of original masks and tags
-    shutil.copy2(cfg["data"]["trg"]["mask_file"], (model_dir / cfg["data"]["trg"]["mask_file"].split("/")[-1]).as_posix())
-    shutil.copy2(cfg["data"]["trg"]["tag_file"], (model_dir / cfg["data"]["trg"]["tag_file"].split("/")[-1]).as_posix())
+    mask_file = cfg["data"]["trg"].get("mask_file",None)
+    tag_file = cfg["data"]["trg"].get("tag_file",None)
+    
+    if mask_file is not None and tag_file is not None:
+        shutil.copy2(mask_file, (model_dir / mask_file.split("/")[-1]).as_posix())
+        shutil.copy2(tag_file, (model_dir / tag_file.split("/")[-1]).as_posix())
 
     # set the random seed
     set_seed(seed=cfg["training"].get("random_seed", 42))

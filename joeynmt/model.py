@@ -19,7 +19,7 @@ from joeynmt.initialization import initialize_model
 from joeynmt.loss import XentLoss
 from joeynmt.vocabulary import Vocabulary
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('joeynmt')
 
 
 class Model(nn.Module):
