@@ -36,6 +36,8 @@ from joeynmt.helpers import ConfigurationError, flatten, load_config, write_list
 from joeynmt.tokenizers import BasicTokenizer
 from joeynmt.vocabulary import sort_and_cut
 
+from token_classifier import token_classifier
+
 
 def build_vocab_from_sents(
     tokens: List[List[str]],
@@ -196,7 +198,8 @@ def train_hf_bpe(
     model_file: str,
     vocab_file: Path,
     mask_file: Path,
-    tag_file: Path
+    tag_file: Path,
+    vocab_type: str,
 ) -> None:
     """
     Train BPE Model
@@ -238,17 +241,21 @@ def train_hf_bpe(
 
         vocab = [x for (x, _) in sorted(tokenizer.get_vocab().items(), key = lambda x: x[1])]
         write_list_to_file(vocab_file, vocab)
-        
         if lang == "ko":
-            tag_list = create_tags(vocab, tag_file)
-            create_masks(tag_list, mask_file)
+            if tag_file is not None and mask_file is not None:
+                if vocab_type == "non-compat":
+                    tag_list = create_tags(vocab, tag_file)
+                    create_masks(tag_list, mask_file)
+                # if vocab_type == "compat":
+                #     tag_list = create_tags_compat(vocab, tag_file)
+                #     create_masks_compat(tag_list, mask_file)
 
 def create_tags(
     vocab_list: list[str],
     file_path: Path
 ) -> List:
     """
-    Create tags [startswith, endswith] given a list of vocabulary. (currently only for non-compat)
+    Create tags [startswith, endswith] given a list of non-compat jamo vocabulary.
     
     0 - i
     1 - v
@@ -307,6 +314,68 @@ def create_tags(
             tag.append(2)
         else:
             tag.append(3)
+        
+        tag_list.append(tag)
+    
+    print("tag list created")
+    tag_tensor = torch.tensor(tag_list, dtype=torch.int32)
+    torch.save(tag_tensor, file_path)
+    
+    return tag_list
+    
+
+
+def create_tags_compat(
+    vocab_list: list[str],
+    file_path: Path
+) -> List:
+    """
+    Create tags [startswith, endswith] given a list of compat jamo vocabulary.
+    
+    0 - None
+    1 - Initial
+    2 - Vowel
+    3 - Final
+    4 - Floating (eg __ㄱ that can be both initial or final)
+    5 - Others (non-korean, numbers, punctuations)
+    6 - Error 
+    
+    Example:
+    "ㅎㅏㄴㄱㅜㄱ"  -> [1,3]
+    "ㅏㄴㄱㅜㄱㅎ"  -> [2,1]
+    "ㅏㄴㄱㅜㄱ"    -> [2,3] (or could be [2,2] if it is a jongseong)
+    "ㄴㄱㅜㄱㅇㅓ"   -> [3,2]
+    "ㄴㄱㅜㄱ",    -> [3,3]
+    "ㄴㄱ"        -> [3,1]
+    "ㄴ"        -> [1,1] # should be definitely an I, accounting for lack of "__" prefix
+    "ㄸ"        -> [1,1]
+    "ㄿ"        -> [3,3]
+    "ㅏ"        -> [2,2]
+    "a"        -> [5,5]
+    "__ㄴ"        -> [4,4]
+    
+    -Input-
+    vocab_list : sorted vocab list
+    
+    -Output-
+    tag_list : tag list 
+    
+    
+    """
+    vocab_size = len(vocab_list)
+    
+    assert vocab_size != 0, "Input is an empty list"
+    
+    print("vocab size: ", vocab_size)
+    print("creating tag list....")
+    
+    tag_list = [] # initialise empty list
+    
+    for tok in vocab_list:
+        
+        known_tags = token_classifier(tok)
+            
+        tag = [known_tags[0].value, known_tags[-1].value]
         
         tag_list.append(tag)
     
@@ -398,6 +467,7 @@ def run(
     tag_file: Path,
     tokenizer_type: str,
     tokenizer_cfg: Dict,
+    vocab_type: str,
 ):
     # pylint: disable=redefined-outer-name
     # Warn overwriting
@@ -466,7 +536,8 @@ def run(
                          model_file = tokenizer_cfg["model_file"], 
                          vocab_file = vocab_file,
                          mask_file = mask_file,
-                         tag_file=tag_file
+                         tag_file=tag_file,
+                         vocab_type=vocab_type,
                          )
         else:
             raise ConfigurationError(f"{tokenizer_type}: Unknown tokenizer type.")
@@ -479,6 +550,7 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
     cfg = load_config(Path(args.config_path))
     src_cfg = cfg["data"]["src"]
     trg_cfg = cfg["data"]["trg"]
+    vocab_type = cfg["data"]["vocab_type"]
 
     # build basic tokenizer just for preprocessing purpose
     tokenizer = {
@@ -516,8 +588,8 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
         min_freq = cfg.get("voc_min_freq", 1)
         max_size = int(cfg.get("voc_limit", sys.maxsize))
         voc_file = Path(cfg.get("voc_file", "vocab.txt"))
-        mask_file = Path(cfg.get("mask_file", "x.pt"))
-        tag_file = Path(cfg.get("tag_file", "t.pt"))
+        mask_file = cfg.get("mask_file", None)
+        tag_file = cfg.get("tag_file", None)
         tok_type = cfg.get("tokenizer_type", "sentencepiece")
         tok_cfg = cfg.get("tokenizer_cfg", {})
         return lang, level, min_freq, max_size, voc_file, mask_file, tag_file, tok_type, tok_cfg
@@ -558,6 +630,7 @@ def main(args) -> None:  # pylint: disable=redefined-outer-name
             tag_file=tag_file,
             tokenizer_type=tok_type,
             tokenizer_cfg=tok_cfg,
+            vocab_type=vocab_type,
         )
 
 
