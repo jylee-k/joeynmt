@@ -322,9 +322,46 @@ def create_tags(
     torch.save(tag_tensor, file_path)
     
     return tag_list
+
+def create_masks(
+    tag_list : list[list[int]],
+    file_path : Path
+
+) -> None:
+    """
+    Create mask and save as pytorch tensor
+    """
+    vocab_size = len(tag_list)
     
-
-
+    print("creating mask....")
+    x = torch.zeros((4,vocab_size), dtype=bool) # row for ending of prev token, col for vocab list
+    
+    for j in range(vocab_size):
+        if tag_list[j][0] == 0: # if token starts with i
+            x[0][j] = True # prev token must end with f or w
+            x[1][j] = True
+            # x[2][j] = 1 # prev token must end with f or w
+            # x[3][j] = 1
+        elif tag_list[j][0] == 1: # if token starts with v
+            # x[0][j] = 1 # prev token must end with i
+            x[1][j] = True
+            x[2][j] = True
+            x[3][j] = True
+        elif tag_list[j][0] == 2: # if token starts with f
+            x[0][j] = True
+            # x[1][j] = 1 # prev token must end with v
+            x[2][j] = True
+            x[3][j] = True
+        else: # if token starts with w
+            x[0][j] = True
+            x[1][j] = True
+            # x[2][j] = 1 # prev token must end with f or w
+            # x[3][j] = 1
+    
+    torch.save(x, file_path)
+    print("mask saved to ", file_path)
+    
+    
 def create_tags_compat(
     vocab_list: list[str],
     file_path: Path
@@ -422,6 +459,7 @@ def create_masks(
     
     torch.save(x, file_path)
     print("mask saved to ", file_path)
+    
     
     
 def save_bpe(
