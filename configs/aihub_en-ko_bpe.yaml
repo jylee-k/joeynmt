@@ -2,10 +2,11 @@ name: "aihub_en-ko_bpe"
 joeynmt_version: "2.0.0"
 
 data:
-    train: "../../data/aihub_en-ko/processed/data/spaced/non-compat/train"
-    dev: "../../data/aihub_en-ko/processed/data/spaced/non-compat/dev"
-    test: "../../data/aihub_en-ko/processed/data/spaced/non-compat/test"
+    train: "../../data/aihub_en-ko/processed/data/spaced/compat_f/train"
+    dev: "../../data/aihub_en-ko/processed/data/spaced/compat_f/dev"
+    test: "../../data/aihub_en-ko/processed/data/spaced/compat_f/test"
     dataset_type: "plain"
+    vocab_type: "compat" # "compat", "non-compat", "syllable"
     sample_dev_subset: 5000 # run validation on this number of random samples from dev set, fixed seed 42 in datasets.py
     src:
         lang: "en"
@@ -14,12 +15,12 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "models/non-compat_hf_bpe_10000_ppl/src_vocab.txt"
+        voc_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_en_10000.txt"
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
             num_merges: 10000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_en.10000"
-            model_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_en.10000"
+            model_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_en.10000"
             pretokenizer: "moses"
     trg:
         lang: "ko"
@@ -28,14 +29,14 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "models/non-compat_hf_bpe_10000_ppl/trg_vocab.txt"
-        mask_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_vocab_ko_10000_mask_bool.pt" # comment for no masking
-        tag_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_vocab_ko_10000_tag.pt" # comment for no masking
+        voc_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_ko_16000.txt"
+        # mask_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_ko_6551_mask_bool.pt" # comment for no masking
+        # tag_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_ko_6551_tag.pt" # comment for no masking
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 10000
+            num_merges: 16000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_ko.6000"
-            model_file: "models/non-compat_hf_bpe_10000_ppl/hf_bpe_ko.10000"
+            model_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_ko.16000"
             pretokenizer: "none"
 
 testing:
@@ -73,14 +74,14 @@ training:
     batch_multiplier: 1
     early_stopping_metric: "ppl" 
     validation_step_patience: 5 # default is 5
-    epochs: 5
+    epochs: 100
     validation_freq: 10000
     logging_freq: 1000
-    model_dir: "models/non-compat_10000_cheap_mask"
+    model_dir: "models/compat_f_16000"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 5
+    cuda_device: 4
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
     theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
@@ -93,7 +94,7 @@ model:
     bias_initializer: "zeros"
     tied_embeddings: False
     tied_softmax: False
-    use_compile: False # use model = torch.compile(model)
+    use_compile: False # set to True to use model = torch.compile(model)
     encoder:
         type: "transformer"
         num_layers: 6

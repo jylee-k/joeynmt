@@ -45,8 +45,8 @@ def predict(
     data: Dataset,
     device: torch.device,
     n_gpu: int,
-    tag_file: Path = "",
-    mask_file: Path = "",
+    tag_file: str = "",
+    mask_file: str = "",
     compute_loss: bool = False,
     normalization: str = "batch",
     num_workers: int = 0,
@@ -207,6 +207,7 @@ def predict(
                     fp16=fp16,
                     token_tags=token_tags,
                     token_masks=token_masks,
+                    masked=masked,
                 )
                 total_n_generated_tokens += (output.reshape(-1) != model.pad_index).sum().item() # total generated tokens (without padding)
 
@@ -383,8 +384,8 @@ def test(
         fp16,
     ) = parse_train_args(cfg["training"], mode="prediction")
     
-    tag_file = cfg["data"]["trg"]["tag_file"]
-    mask_file = cfg["data"]["trg"]["mask_file"]
+    tag_file = cfg["data"]["trg"].get("tag_file", None)
+    mask_file = cfg["data"]["trg"].get("mask_file", None)
 
     if len(logger.handlers) == 0:
         pkg_version = make_logger(model_dir, mode="test")  # version string returned

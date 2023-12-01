@@ -40,9 +40,9 @@ def main() -> None:  # pylint: disable=redefined-outer-name
                     #     print(f"recomposed text: {recomposed_text}")
                     #     break
                 
-            with open(Path(dest_path, type, f"{split}.{lang}"), "x") as f:
+            with open(Path(dest_path, "compat_f", f"{split}.{lang}"), "x+") as f:
                 f.writelines('\n'.join(text))
-            print(f"{type} {split}.{lang} completed with no errors") 
+            print(f"compat_f {split}.{lang} completed with no errors") 
             
 
 if __name__ == "__main__":

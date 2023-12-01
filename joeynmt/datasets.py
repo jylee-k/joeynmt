@@ -282,8 +282,8 @@ class PlaintextDataset(BaseDataset):
         
         # pass in mask and tag paths
         if split == "train":
-            self.tag_file=kwargs["tag_file"]
-            self.mask_file=kwargs["mask_file"]
+            self.tag_file=kwargs.get("tag_file", None)
+            self.mask_file=kwargs.get("mask_file", None)
         else:
             self.tag_file=None
             self.mask_file=None

@@ -340,6 +340,7 @@ def beam_search(
     repetition_penalty: float = kwargs.get("repetition_penalty", -1)
     no_repeat_ngram_size: int = kwargs.get("no_repeat_ngram_size", -1)
     encoder_input: Tensor = kwargs.get("encoder_input", None)  # for repetition blocker
+    masked : bool = kwargs.get("masked", False)
     token_masks : Tensor = kwargs.get("token_masks", None)
     token_tags : Tensor = kwargs.get("token_tags", None)
 
@@ -348,8 +349,9 @@ def beam_search(
     fp16: bool = kwargs.get("fp16", False)
     is_transformer = isinstance(model.decoder, TransformerDecoder)
     
-    token_masks = token_masks.to(device)
-    token_tags = token_tags.to(device)
+    if masked:
+        token_masks = token_masks.to(device)
+        token_tags = token_tags.to(device)
 
     att_vectors = None  # for RNN only, not used for Transformer
     hidden = None  # for RNN only, not used for Transformer
@@ -473,16 +475,16 @@ def beam_search(
                         trg_mask=None,  # subsequent mask for Transformer only
                     )
 
-
-        # with the mask generated during vocab generation for invalid tokens
-        # mask shape: (4, trg_vocab)
-        last_step = alive_seq[:, -1].view(-1, 1)
-        # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
-        for sent in range(last_step.size(dim=0)):
-            # get which type of token was in the previous time step i.e. what it ends with (i, v, f or w)
-            end_type = token_tags[last_step[sent, :].item(), 1].item()
-            # set all invalid token indices to -inf
-            logits[sent][token_masks[end_type]] = float("-inf")
+        if masked:
+            # with the mask generated during vocab generation for invalid tokens
+            # mask shape: (4, trg_vocab)
+            last_step = alive_seq[:, -1].view(-1, 1)
+            # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
+            for sent in range(last_step.size(dim=0)):
+                # get which type of token was in the previous time step i.e. what it ends with (i, v, f or w)
+                end_type = token_tags[last_step[sent, :].item(), 1].item()
+                # set all invalid token indices to -inf
+                logits[sent][token_masks[end_type]] = float("-inf")
         
         # compute log probability distribution over trg vocab
         # `log_probs` shape: (remaining_batch_size * beam_size, trg_vocab)
