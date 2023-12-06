@@ -3,6 +3,7 @@
 Search module
 """
 from typing import List, Tuple
+import logging
 
 import numpy as np
 import torch
@@ -18,6 +19,7 @@ from pathlib import Path
 
 __all__ = ["greedy", "beam_search", "search"]
 
+logger = logging.getLogger('joeynmt')
 
 def greedy(
     src_mask: Tensor,
@@ -343,6 +345,7 @@ def beam_search(
     masked : bool = kwargs.get("masked", False)
     token_masks : Tensor = kwargs.get("token_masks", None)
     token_tags : Tensor = kwargs.get("token_tags", None)
+    vocab_type : str = kwargs.get("vocab_type", "syllable")
 
     trg_vocab_size = model.decoder.output_size
     device = encoder_output.device
@@ -476,15 +479,31 @@ def beam_search(
                     )
 
         if masked:
-            # with the mask generated during vocab generation for invalid tokens
-            # mask shape: (4, trg_vocab)
-            last_step = alive_seq[:, -1].view(-1, 1)
-            # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
-            for sent in range(last_step.size(dim=0)):
-                # get which type of token was in the previous time step i.e. what it ends with (i, v, f or w)
-                end_type = token_tags[last_step[sent, :].item(), 1].item()
-                # set all invalid token indices to -inf
-                logits[sent][token_masks[end_type]] = float("-inf")
+            last_step = alive_seq[:, -2:] # shape (remaining_batch_size * beam_size, 2)
+            if vocab_type == "non-compat":
+                # with the mask generated during vocab generation for invalid tokens
+                # mask shape: (4, trg_vocab)
+                # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
+                for sent in range(last_step.size(dim=0)):
+                    # get which type of token was in the previous time step i.e. what it ends with (i, v, f or w)
+                    end_type = token_tags[last_step[sent, -1], 1]
+                    # set all invalid token indices to -inf
+                    logits[sent][token_masks[end_type]] = float("-inf")
+                    
+            elif vocab_type == "compat":
+                dis = torch.tensor([0,2,3,1,1,1],device=device) # disambiguation for floats
+                # with the mask generated during vocab generation for invalid tokens
+                # mask shape: (6, trg_vocab)
+                # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)
+                for sent in range(last_step.size(dim=0)):
+                    # get which type of token was in the previous time step i.e. what it ends with (i, v, f, float, or other)
+                    end_type = token_tags[last_step[sent, -1], 1]
+                    if end_type == 4: # end type is a float
+                        # disambiguate the float as a initial consonant or a final consonant with reference to the token before the float
+                        end_type = dis[token_tags[last_step[sent,0], 1]]
+                    # set all invalid token indices to -inf
+                    logits[sent][token_masks[end_type]] = float("-inf")
+                
         
         # compute log probability distribution over trg vocab
         # `log_probs` shape: (remaining_batch_size * beam_size, trg_vocab)

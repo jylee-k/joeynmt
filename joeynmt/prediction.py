@@ -47,6 +47,7 @@ def predict(
     n_gpu: int,
     tag_file: str = "",
     mask_file: str = "",
+    vocab_type: str = "syllable",
     compute_loss: bool = False,
     normalization: str = "batch",
     num_workers: int = 0,
@@ -98,7 +99,7 @@ def predict(
         generate_unk,
         repetition_penalty,
         no_repeat_ngram_size,
-        masked
+        masked,
     ) = parse_test_args(cfg)
 
     if return_prob == "ref":  # no decoding needed
@@ -113,7 +114,8 @@ def predict(
             f"max_output_length={max_output_length}, "
             f"return_prob='{return_prob}', generate_unk={generate_unk}, "
             f"repetition_penalty={repetition_penalty}, "
-            f"no_repeat_ngram_size={no_repeat_ngram_size})")
+            f"no_repeat_ngram_size={no_repeat_ngram_size}, "
+            f"masked={masked})")
     logger.info("Predicting %d example(s)...%s", len(data), decoding_description)
 
     assert eval_batch_size >= n_gpu, "`batch_size` must be bigger than `n_gpu`."
@@ -208,6 +210,7 @@ def predict(
                     token_tags=token_tags,
                     token_masks=token_masks,
                     masked=masked,
+                    vocab_type=vocab_type,
                 )
                 total_n_generated_tokens += (output.reshape(-1) != model.pad_index).sum().item() # total generated tokens (without padding)
 
@@ -386,6 +389,8 @@ def test(
     
     tag_file = cfg["data"]["trg"].get("tag_file", None)
     mask_file = cfg["data"]["trg"].get("mask_file", None)
+    
+    vocab_type = cfg["data"].get("vocab_type", "syllable")
 
     if len(logger.handlers) == 0:
         pkg_version = make_logger(model_dir, mode="test")  # version string returned
@@ -469,6 +474,7 @@ def test(
                 fp16=fp16,
                 tag_file=tag_file,
                 mask_file=mask_file,
+                vocab_type=vocab_type,
             )
 
             if save_attention:
@@ -538,6 +544,9 @@ def translate(
             normalization="none",
             num_workers=num_workers,
             cfg=cfg,
+            tag_file=tag_file,
+            mask_file=mask_file,
+            vocab_type=vocab_type,
             fp16=fp16,
         )
         return hypotheses, trg_tokens, trg_scores
@@ -549,6 +558,11 @@ def translate(
     test_cfg = cfg["testing"]
     src_cfg = cfg["data"]["src"]
     trg_cfg = cfg["data"]["trg"]
+    
+    tag_file = cfg["data"]["trg"].get("tag_file", None)
+    mask_file = cfg["data"]["trg"].get("mask_file", None)
+    
+    vocab_type = cfg["data"].get("vocab_type", "syllable")
 
     pkg_version = make_logger(model_dir, mode="translate")  # version string returned
     if "joeynmt_version" in cfg:
@@ -646,6 +660,7 @@ def translate(
                         score) in enumerate(zip_longest(hypotheses, tokens, scores)):
                     assert hyp is not None, (i, hyp, token, score)
                     print(f"#{i + 1}: {hyp}")
+                    logger.info(tokens)
                     if return_prob in ["hyp"]:
                         if beam_size > 1:  # beam search: sequence-level scores
                             print(f"\ttokens: {token}\n\tsequence score: {score[0]}")

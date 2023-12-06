@@ -246,9 +246,9 @@ def train_hf_bpe(
                 if vocab_type == "non-compat":
                     tag_list = create_tags(vocab, tag_file)
                     create_masks(tag_list, mask_file)
-                # if vocab_type == "compat":
-                #     tag_list = create_tags_compat(vocab, tag_file)
-                #     create_masks_compat(tag_list, mask_file)
+                if vocab_type == "compat":
+                    tag_list = create_tags_compat(vocab, tag_file)
+                    create_masks_compat(tag_list, mask_file)
 
 def create_tags(
     vocab_list: list[str],
@@ -422,40 +422,68 @@ def create_tags_compat(
     
     return tag_list
 
-def create_masks(
+def create_masks_compat(
     tag_list : list[list[int]],
     file_path : Path
 
 ) -> None:
     """
     Create mask and save as pytorch tensor
+    
+    mask:   6 * vocab_size tensor
+            rows: the type that the previous token ends with
+            cols: the token indices
+            
+    0 - none (blank mask, just for indexing purposes)
+    1 - initial
+    2 - vowel
+    3 - final
+    4 - float (blank mask, as all float tokens are disambiguated to either initial or final)
+    5 - others
     """
     vocab_size = len(tag_list)
     
     print("creating mask....")
-    x = torch.zeros((4,vocab_size), dtype=bool) # row for ending of prev token, col for vocab list
+    x = torch.zeros((6,vocab_size), dtype=bool) # row for ending of prev token, col for vocab list
     
     for j in range(vocab_size):
-        if tag_list[j][0] == 0: # if token starts with i
-            x[0][j] = True # prev token must end with f or w
+        if tag_list[j][0] == 1: # if token starts with initial
+            # prev token must end with final or other
             x[1][j] = True
-            # x[2][j] = 1 # prev token must end with f or w
-            # x[3][j] = 1
-        elif tag_list[j][0] == 1: # if token starts with v
-            # x[0][j] = 1 # prev token must end with i
-            x[1][j] = True
+            x[2][j] = True 
+            # x[3][j] = True
+            # x[4][j] = True
+            # x[5][j] = True
+            
+        elif tag_list[j][0] == 2: # if token starts with vowel
+            # prev token must end with initial consonant
+            # x[1][j] = True
             x[2][j] = True
             x[3][j] = True
-        elif tag_list[j][0] == 2: # if token starts with f
-            x[0][j] = True
-            # x[1][j] = 1 # prev token must end with v
-            x[2][j] = True
-            x[3][j] = True
-        else: # if token starts with w
-            x[0][j] = True
+            # x[4][j] = True
+            x[5][j] = True
+            
+        elif tag_list[j][0] == 3: # if token starts with final
+            # prev token must end with vowel
             x[1][j] = True
-            # x[2][j] = 1 # prev token must end with f or w
-            # x[3][j] = 1
+            # x[2][j] = True
+            x[3][j] = True
+            # x[4][j] = True
+            x[5][j] = True
+            
+        elif tag_list[j][0] == 4: # if token is a floating consonant
+            # previous token cannot end with an initial consonant
+            x[1][j] = True
+            # x[2][j] = True
+            # x[3][j] = True
+            # x[5][j] = True
+            
+        elif tag_list[j][0] == 5: # if token starts with non korean
+            # prev token must end with final or other
+            x[1][j] = True
+            x[2][j] = True
+            # x[3][j] = True
+            # x[5][j] = True
     
     torch.save(x, file_path)
     print("mask saved to ", file_path)

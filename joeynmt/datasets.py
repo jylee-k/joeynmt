@@ -308,6 +308,8 @@ class PlaintextDataset(BaseDataset):
             trg_list = read_list_from_file(trg_file)
             data[self.trg_lang] = _pre_process(trg_list, self.trg_lang)
             assert len(src_list) == len(trg_list)
+            
+        logger.info("text tokenized")
         return data
 
     def sample_random_subset(self, seed: int = 42) -> None:

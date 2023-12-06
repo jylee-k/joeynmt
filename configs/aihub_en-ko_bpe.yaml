@@ -74,14 +74,14 @@ training:
     batch_multiplier: 1
     early_stopping_metric: "ppl" 
     validation_step_patience: 5 # default is 5
-    epochs: 100
+    epochs: 2
     validation_freq: 10000
     logging_freq: 1000
-    model_dir: "models/compat_f_16000"
+    model_dir: "models/compat_f_test2"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 4
+    cuda_device: 1
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
     theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
