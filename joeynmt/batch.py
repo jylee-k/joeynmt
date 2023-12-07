@@ -77,7 +77,7 @@ class Batch:
             # self.token_tags: Tensor = token_tags
             # self.token_masks: Tensor = token_masks
             if token_tags is not None and token_masks is not None:
-                if vocab_type == "non-compat":
+                if vocab_type == "positional":
                     batch_size,seq_length = self.trg_input.shape
                     vocab_size = token_tags.shape[0]
                     

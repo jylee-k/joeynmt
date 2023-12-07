@@ -480,7 +480,7 @@ def beam_search(
 
         if masked:
             last_step = alive_seq[:, -2:] # shape (remaining_batch_size * beam_size, 2)
-            if vocab_type == "non-compat":
+            if vocab_type == "positional":
                 # with the mask generated during vocab generation for invalid tokens
                 # mask shape: (4, trg_vocab)
                 # `logits` shape: (remaining_batch_size * beam_size, trg_vocab)

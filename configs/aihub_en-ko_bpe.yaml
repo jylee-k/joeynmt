@@ -6,7 +6,7 @@ data:
     dev: "../../data/aihub_en-ko/processed/data/spaced/compat_f/dev"
     test: "../../data/aihub_en-ko/processed/data/spaced/compat_f/test"
     dataset_type: "plain"
-    vocab_type: "compat" # "compat", "non-compat", "syllable"
+    vocab_type: "compat" # "compat", "positional", "syllable"
     sample_dev_subset: 5000 # run validation on this number of random samples from dev set, fixed seed 42 in datasets.py
     src:
         lang: "en"
