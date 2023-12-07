@@ -77,11 +77,11 @@ training:
     epochs: 2
     validation_freq: 10000
     logging_freq: 1000
-    model_dir: "models/compat_f_test2"
+    model_dir: "models/compat_f_test_compile"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 1
+    cuda_device: 0
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
     theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
@@ -94,7 +94,7 @@ model:
     bias_initializer: "zeros"
     tied_embeddings: False
     tied_softmax: False
-    use_compile: False # set to True to use model = torch.compile(model)
+    use_compile: True # set to True to use model = torch.compile(model)
     encoder:
         type: "transformer"
         num_layers: 6

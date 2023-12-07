@@ -31,6 +31,7 @@ class Batch:
         device: torch.device,
         token_tags: Tensor,
         token_masks: Tensor,
+        vocab_type: str,
         pad_index: int = PAD_ID,
         has_trg: bool = True,
         is_train: bool = True,
@@ -76,19 +77,34 @@ class Batch:
             # self.token_tags: Tensor = token_tags
             # self.token_masks: Tensor = token_masks
             if token_tags is not None and token_masks is not None:
-                batch_size,seq_length = self.trg_input.shape
-                vocab_size = token_tags.shape[0]
-                
-                # tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
-                
-                # trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
-                
-                # self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
-                # for b in range(batch_size):
-                #     for s in range(seq_length):
-                #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
-                # self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
-                self.mask_tensor = torch.ones((batch_size, seq_length, vocab_size), dtype=bool) # cheap mask for testing
+                if vocab_type == "non-compat":
+                    batch_size,seq_length = self.trg_input.shape
+                    vocab_size = token_tags.shape[0]
+                    
+                    # tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
+                    
+                    # trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
+                    
+                    # self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
+                    # for b in range(batch_size):
+                    #     for s in range(seq_length):
+                    #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
+                    # self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
+                    self.mask_tensor = torch.ones((batch_size, seq_length, vocab_size), dtype=bool) # cheap mask for testing
+                elif vocab_type == "compat":
+                    batch_size,seq_length = self.trg_input.shape
+                    vocab_size = token_tags.shape[0]
+                    
+                    # tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
+                    
+                    # trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
+                    
+                    # self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
+                    # for b in range(batch_size):
+                    #     for s in range(seq_length):
+                    #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
+                    # self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
+                    self.mask_tensor = torch.ones((batch_size, seq_length, vocab_size), dtype=bool) # cheap mask for testing
             else:
                 self.mask_tensor = None
 

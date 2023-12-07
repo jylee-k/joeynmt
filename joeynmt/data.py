@@ -53,6 +53,8 @@ def load_data(
     
     tag_file = data_cfg["trg"].get("tag_file", None)
     mask_file = data_cfg["trg"].get("mask_file", None)
+    
+    vocab_type = data_cfg.get("vocab_type", "syllable")
 
     if train_path is None and dev_path is None and test_path is None:
         raise ValueError("Please specify at least one data source path.")
@@ -83,6 +85,7 @@ def load_data(
             random_subset=train_subset,
             tag_file=tag_file,
             mask_file=mask_file,
+            vocab_type=vocab_type,
             **dataset_cfg,
         )
 

@@ -174,6 +174,7 @@ class BaseDataset(Dataset):
             is_train=self.split == "train",
             token_masks=token_masks,
             token_tags=token_tags,
+            vocab_type=self.vocab_type,
         )
 
     def make_iter(
@@ -287,6 +288,9 @@ class PlaintextDataset(BaseDataset):
         else:
             self.tag_file=None
             self.mask_file=None
+            
+        self.vocab_type=kwargs.get("vocab_type", "syllable")
+        
     def load_data(self, path: str, **kwargs) -> Any:
 
         def _pre_process(seq, lang):

@@ -106,8 +106,6 @@ class TrainManager:
         self.device = device
         self.n_gpu = n_gpu
         self.num_workers = num_workers
-        if self.device.type == "cuda":
-            self.model.to(self.device)
 
         # optimization
         self.clip_grad_fun = build_gradient_clipper(config=cfg["training"])
@@ -218,6 +216,9 @@ class TrainManager:
         # compile model
         if cfg["model"]["use_compile"]:
             self.model = torch.compile(self.model)
+        
+        if self.device.type == "cuda":
+            self.model.to(self.device)
 
     def _save_checkpoint(self, new_best: bool, score: float) -> None:
         """
