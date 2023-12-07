@@ -92,7 +92,7 @@ COMPAT_TO_JAMO_LOOKUP_JONGSEONG = {v:k for k,v in JAMO_TO_COMPAT_LOOKUP_JONGSEON
 
 # Functions
 
-def decompose_non_compat(text):
+def decompose_positional(text):
     """decomposes Korean text into Hangul Jamo (Ux1100 ~ Ux11FF)
 
     Args:
@@ -137,7 +137,7 @@ def jamos_to_syllable(buffer: list):
                     )
     return chr(syllable_code)
 
-def recompose_non_compat(jamos):
+def recompose_positional(jamos):
     
     """recomposes a Hangul Jamo (Ux1100 ~ Ux11FF) sequence to Korean text
     
@@ -174,7 +174,7 @@ def recompose_non_compat(jamos):
     
     return text
 
-def non_compat_to_compat(jamos):
+def positional_to_compat(jamos):
     
     """converts a Hangul Jamo (Ux1100 ~ Ux11FF) sequence to a Hangul Compatibility Jamo (Ux3131 ~ Ux318E) sequence
 
@@ -218,8 +218,8 @@ def decompose_compat(text):
     """
     
     # get jamo seq from decompose(), and apply jamo_to_compat()
-    jamos = decompose_non_compat(text)
-    compat_jamos = non_compat_to_compat(jamos)
+    jamos = decompose_positional(text)
+    compat_jamos = positional_to_compat(jamos)
     return compat_jamos
 
 def recompose_compat(compat_jamos: str):
@@ -294,16 +294,16 @@ def recompose_compat(compat_jamos: str):
     return text
 
 def decompose(text, type):
-    if type == "non-compat":
-        return decompose_non_compat(text)
+    if type == "positional":
+        return decompose_positional(text)
     elif type == "compat":
         return decompose_compat(text)
     else:
-        raise Exception("arg 'type' should be either 'non-compat' or 'compat'")
+        raise Exception("arg 'type' should be either 'positional' or 'compat'")
 
 def recompose(jamos, type):
-    if type == "non-compat":
-        return recompose_non_compat(jamos)
+    if type == "positional":
+        return recompose_positional(jamos)
     elif type == "compat":
         return recompose_compat(jamos)
     else:
