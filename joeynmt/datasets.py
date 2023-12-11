@@ -498,6 +498,7 @@ class StreamDataset(BaseDataset):
         )
         # place holder
         self.cache = {}
+        self.vocab_type=kwargs.get("vocab_type", "syllable")
 
     def set_item(self, src_line: str, trg_line: str = None) -> None:
         """
