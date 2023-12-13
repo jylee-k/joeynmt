@@ -176,15 +176,18 @@ def predict(
                         batch_loss, log_probs, attn, n_correct = model(
                             return_type="loss",
                             return_attention=return_attention,
+                            masked_inference=masked,
                             **vars(batch))
-
                 # sum over multiple gpus
                 batch_loss = batch.normalize(batch_loss, "sum", n_gpu=n_gpu)
                 n_correct = batch.normalize(n_correct, "sum", n_gpu=n_gpu)
                 if return_prob == "ref":
                     ref_scores = batch.score(log_probs)
-                    attention_scores = attn.detach().cpu().float().numpy()
                     output = batch.trg
+                    if attn is not None:
+                        attention_scores = attn.detach().cpu().float().numpy()
+                    else:
+                        attention_scores = None
 
                 total_loss += batch_loss.item()  # cast Tensor to float
                 total_n_correct += n_correct.item()  # cast Tensor to int
@@ -432,7 +435,8 @@ def test(
                 cfg["training"].get("loss", "crossentropy"),
                 cfg["training"].get("label_smoothing", 0.1),
             )
-
+            
+    print("model loss func: ",model.loss_function)
     # when checkpoint is not specified, take latest (best) from model dir
     load_model = load_model if ckpt is None else Path(ckpt)
     ckpt = resolve_ckpt_path(load_model, model_dir)
@@ -462,7 +466,7 @@ def test(
                 "Scoring" if return_prob == "ref" else "Decoding",
                 data_set_name,
             )
-            _, _, hypotheses, hypotheses_raw, seq_scores, att_scores, = predict(
+            valid_scores, _, hypotheses, hypotheses_raw, seq_scores, att_scores, = predict(
                 model=model,
                 data=data_set,
                 compute_loss=return_prob == "ref",

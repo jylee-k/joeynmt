@@ -99,14 +99,16 @@ class Model(nn.Module):
                 if kwargs["theta"] > 1.0: # if theta = 1.0, skip the penalty calculation
                     # kwargs["mask_tensor"] shape (batch_size, seq_length, vocab_size)
                     out[kwargs["mask_tensor"]] /= kwargs["theta"]
-            
+            else: # during eval mode
+                if kwargs["masked_inference"]:
+                    out[kwargs["mask_tensor"]] = float("-inf")
+
             # compute log probs
             log_probs = F.log_softmax(out, dim=-1)
 
             # compute batch loss
             # pylint: disable=not-callable
             batch_loss = self.loss_function(log_probs, **kwargs)
-
             # count correct tokens before decoding (for accuracy)
             trg_mask = kwargs["trg_mask"].squeeze(1)
             assert kwargs["trg"].size() == trg_mask.size()

@@ -15,12 +15,12 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_en_10000.txt"
+        voc_file: "models/compat_f_test_big/src_vocab.txt"
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
             num_merges: 10000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_en.10000"
-            model_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_en.10000"
+            model_file: "models/compat_f_test_big/bpe_en.10000"
             pretokenizer: "moses"
     trg:
         lang: "ko"
@@ -29,14 +29,14 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_ko_16000.txt"
-        # mask_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_ko_6551_mask_bool.pt" # comment for no masking
-        # tag_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_vocab_ko_6551_tag.pt" # comment for no masking
+        voc_file: "models/compat_f_test_big/trg_vocab.txt"
+        mask_file: "models/compat_f_10000/vocab_ko_10000_mask.pt" # comment for no masking
+        tag_file: "models/compat_f_10000/vocab_ko_10000_tag.pt" # comment for no masking
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 16000
+            num_merges: 10000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_ko.6000"
-            model_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_ko.16000"
+            model_file: "models/compat_f_test_big/bpe_ko.10000"
             pretokenizer: "none"
 
 testing:
@@ -74,17 +74,17 @@ training:
     batch_multiplier: 1
     early_stopping_metric: "ppl" 
     validation_step_patience: 5 # default is 5
-    epochs: 2
-    validation_freq: 10000
+    epochs: 100
+    validation_freq: -1 # set -1 for validation every epoch
     logging_freq: 1000
-    model_dir: "models/compat_f_test_compile"
+    model_dir: "models/compat_f_test_big_10000_masked_1.5"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 0
+    cuda_device: 4
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
-    theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
+    theta: 1.5 # penalty for invalid tokens during softmax (1.0 = no penalty)
 
 model:
     initializer: "xavier_uniform"
@@ -94,19 +94,19 @@ model:
     bias_initializer: "zeros"
     tied_embeddings: False
     tied_softmax: False
-    use_compile: True # set to True to use model = torch.compile(model)
+    use_compile: False # set to True to use model = torch.compile(model)
     encoder:
         type: "transformer"
         num_layers: 6
         num_heads: 4
         embeddings:
-            embedding_dim: 256
+            embedding_dim: 512
             scale: True
             dropout: 0.
         # typically ff_size = 4 x hidden_size
-        hidden_size: 256
+        hidden_size: 512
         ff_size: 1024
-        dropout: 0.3
+        dropout: 0.1
         layer_norm: "pre"
         activation: "relu"
     decoder:
@@ -114,12 +114,12 @@ model:
         num_layers: 6
         num_heads: 4
         embeddings:
-            embedding_dim: 256
+            embedding_dim: 512
             scale: True
             dropout: 0.
         # typically ff_size = 4 x hidden_size
-        hidden_size: 256
+        hidden_size: 512
         ff_size: 1024
-        dropout: 0.3
+        dropout: 0.1
         layer_norm: "pre"
         activation: "relu"

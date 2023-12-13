@@ -156,7 +156,7 @@ class BaseDataset(Dataset):
             trg, trg_length = None, None
             
         # load tag list and mask tensors
-        if self.split == "train" and self.tag_file is not None and self.mask_file is not None:
+        if self.tag_file is not None and self.mask_file is not None:
             token_tags = torch.load(self.tag_file)[:,1]
             token_masks = torch.load(self.mask_file)
         else:
@@ -282,13 +282,10 @@ class PlaintextDataset(BaseDataset):
         self.idx_map = []
         
         # pass in mask and tag paths
-        if split == "train":
-            self.tag_file=kwargs.get("tag_file", None)
-            self.mask_file=kwargs.get("mask_file", None)
-        else:
-            self.tag_file=None
-            self.mask_file=None
-            
+        
+        self.tag_file=kwargs.get("tag_file", None)
+        self.mask_file=kwargs.get("mask_file", None)
+        
         self.vocab_type=kwargs.get("vocab_type", "syllable")
         
     def load_data(self, path: str, **kwargs) -> Any:

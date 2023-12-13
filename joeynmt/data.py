@@ -123,6 +123,9 @@ def load_data(
             tokenizer=tokenizer,
             sequence_encoder=sequence_encoder,
             random_subset=dev_subset,
+            tag_file=tag_file,
+            mask_file=mask_file,
+            vocab_type=vocab_type,
             **dataset_cfg,
         )
 
@@ -139,6 +142,9 @@ def load_data(
             tokenizer=tokenizer,
             sequence_encoder=sequence_encoder,
             random_subset=-1,  # no subsampling for test
+            tag_file=tag_file,
+            mask_file=mask_file,
+            vocab_type=vocab_type,
             **dataset_cfg,
         )
     logger.info("Data loaded.")

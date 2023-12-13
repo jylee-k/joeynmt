@@ -72,7 +72,6 @@ class Batch:
             # we exclude the padded areas (and blank areas) from the loss computation
             self.trg_mask: Tensor = (self.trg != pad_index).unsqueeze(1)
             self.ntokens: int = (self.trg != pad_index).data.sum().item()
-            
             # generating mask tensor
             # self.token_tags: Tensor = token_tags
             # self.token_masks: Tensor = token_masks
@@ -89,22 +88,21 @@ class Batch:
                     # for b in range(batch_size):
                     #     for s in range(seq_length):
                     #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
-                    # self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
-                    self.mask_tensor = torch.ones((batch_size, seq_length, vocab_size), dtype=bool) # cheap mask for testing
+                    self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
+                    
                 elif vocab_type == "compat":
                     batch_size,seq_length = self.trg_input.shape
                     vocab_size = token_tags.shape[0]
-                    
-                    # tag_dict = {i:x.item() for i,x in enumerate(token_tags[:,1])}
-                    
-                    # trg_tags = torch.tensor([tag_dict[x.item()] for x in self.trg_input.flatten()]).reshape(batch_size,seq_length)
                     
                     # self.mask_tensor: Tensor = torch.empty((batch_size, seq_length, vocab_size), dtype=bool)
                     # for b in range(batch_size):
                     #     for s in range(seq_length):
                     #         self.mask_tensor[b,s] = token_masks[trg_tags[b,s].item()]
-                    # self.mask_tensor = token_masks[token_tags[self.trg_input.flatten()]].reshape(batch_size, seq_length, vocab_size) # real mask
-                    self.mask_tensor = torch.ones((batch_size, seq_length, vocab_size), dtype=bool) # cheap mask for testing
+                    dis = torch.tensor([0,2,3,1,1,1], dtype=torch.int32)
+                    tags = token_tags[self.trg_input.flatten()]
+                    tags[tags==4] = dis[tags[(tags == 4).roll(-1)]]
+                    self.mask_tensor = token_masks[tags].reshape(batch_size, seq_length, vocab_size) # real mask
+                    
             else:
                 self.mask_tensor = None
 

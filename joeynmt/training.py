@@ -206,6 +206,8 @@ class TrainManager:
         self.valid_cfg["repetition_penalty"] = -1  # turn off
         self.valid_cfg["no_repeat_ngram_size"] = -1  # turn off
         
+        self.masked_inference = self.valid_cfg["masked"]
+        
         # # load tag list and mask tensors
         # self.token_tags = torch.load(cfg["data"]["trg"]["tag_file"])
         # self.token_masks = torch.load(cfg["data"]["trg"]["mask_file"])
@@ -545,9 +547,10 @@ class TrainManager:
                         total_batch_loss = 0  # reset batch loss
 
                         # validate on the entire dev set
-                        if self.stats.steps % self.validation_freq == 0:
-                            valid_duration = self._validate(valid_data)
-                            total_valid_duration += valid_duration
+                        if self.validation_freq > 0:
+                            if self.stats.steps % self.validation_freq == 0:
+                                valid_duration = self._validate(valid_data)
+                                total_valid_duration += valid_duration
 
                         # check current_lr
                         current_lr = self.optimizer.param_groups[0]["lr"]
@@ -560,7 +563,12 @@ class TrainManager:
 
                     if self.stats.is_min_lr or self.stats.is_max_update:
                         break
-
+                # validate once every epoch
+                if self.validation_freq == -1:
+                    valid_duration = self._validate(valid_data)
+                    total_valid_duration += valid_duration
+                
+                
                 if (
                     self.stats.is_min_lr
                     or self.stats.is_max_update
