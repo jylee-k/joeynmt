@@ -243,14 +243,14 @@ def train_hf_bpe(
         write_list_to_file(vocab_file, vocab)
         if lang == "ko":
             if tag_file is not None and mask_file is not None:
-                if vocab_type == "non-compat":
-                    tag_list = create_tags(vocab, tag_file)
-                    create_masks(tag_list, mask_file)
+                if vocab_type == "positional":
+                    tag_list = create_tags_positional(vocab, tag_file)
+                    create_masks_positional(tag_list, mask_file)
                 if vocab_type == "compat":
                     tag_list = create_tags_compat(vocab, tag_file)
                     create_masks_compat(tag_list, mask_file)
 
-def create_tags(
+def create_tags_positional(
     vocab_list: list[str],
     file_path: Path
 ) -> List:
@@ -323,7 +323,7 @@ def create_tags(
     
     return tag_list
 
-def create_masks(
+def create_masks_positional(
     tag_list : list[list[int]],
     file_path : Path
 

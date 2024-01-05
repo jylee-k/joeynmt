@@ -315,6 +315,9 @@ def parse_train_args(cfg: Dict, mode: str = "training") -> Tuple:
     
     # get theta
     theta = cfg.get("theta", 1.0)
+    
+    # add loss term
+    add_loss_term = cfg.get("add_loss_term", False)
 
     return (
         model_dir,
@@ -347,6 +350,7 @@ def parse_train_args(cfg: Dict, mode: str = "training") -> Tuple:
         reset_optimizer,
         reset_iter_state,
         theta,
+        add_loss_term,
     )
 
 

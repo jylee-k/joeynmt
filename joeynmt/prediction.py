@@ -53,6 +53,7 @@ def predict(
     num_workers: int = 0,
     cfg: Dict = None,
     fp16: bool = False,
+    add_loss_term: bool = False,
 ) -> Tuple[
         Dict[str, float],
         List[str],
@@ -177,6 +178,7 @@ def predict(
                             return_type="loss",
                             return_attention=return_attention,
                             masked_inference=masked,
+                            add_loss_term=add_loss_term,
                             **vars(batch))
                 # sum over multiple gpus
                 batch_loss = batch.normalize(batch_loss, "sum", n_gpu=n_gpu)
@@ -394,6 +396,8 @@ def test(
     mask_file = cfg["data"]["trg"].get("mask_file", None)
     
     vocab_type = cfg["data"].get("vocab_type", "syllable")
+    
+    add_loss_term = cfg["training"].get("add_loss_term", False)
 
     if len(logger.handlers) == 0:
         pkg_version = make_logger(model_dir, mode="test")  # version string returned
@@ -479,6 +483,7 @@ def test(
                 tag_file=tag_file,
                 mask_file=mask_file,
                 vocab_type=vocab_type,
+                add_loss_term=add_loss_term,
             )
 
             if save_attention:

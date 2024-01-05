@@ -95,13 +95,15 @@ class Model(nn.Module):
 
             out, _, att_probs, _ = self._encode_decode(**kwargs)
             
-            if self.training: # if model is in training mode
-                if kwargs["theta"] > 1.0: # if theta = 1.0, skip the penalty calculation
-                    # kwargs["mask_tensor"] shape (batch_size, seq_length, vocab_size)
-                    out[kwargs["mask_tensor"]] /= kwargs["theta"]
-            else: # during eval mode
-                if kwargs["masked_inference"]:
-                    out[kwargs["mask_tensor"]] = float("-inf")
+            
+            # if self.training: # if model is in training mode
+            #     if kwargs["theta"] > 1.0: # if theta = 1.0, skip the penalty calculation
+            #         # kwargs["mask_tensor"] shape (batch_size, seq_length, vocab_size)
+            #         out[kwargs["mask_tensor"]] /= kwargs["theta"]
+                    
+            # else: # during eval mode
+            #     if kwargs["masked_inference"]:
+            #         out[kwargs["mask_tensor"]] = float("-inf")
 
             # compute log probs
             log_probs = F.log_softmax(out, dim=-1)
@@ -109,6 +111,12 @@ class Model(nn.Module):
             # compute batch loss
             # pylint: disable=not-callable
             batch_loss = self.loss_function(log_probs, **kwargs)
+            
+            # add the probability mass of the invalid tokens to loss (should this be only during training?)
+            
+            if kwargs["add_loss_term"]:
+                batch_loss += torch.sum(torch.exp(log_probs)[kwargs["mask_tensor"]])
+            
             # count correct tokens before decoding (for accuracy)
             trg_mask = kwargs["trg_mask"].squeeze(1)
             assert kwargs["trg"].size() == trg_mask.size()
@@ -128,8 +136,7 @@ class Model(nn.Module):
             return_tuple = (encoder_output, encoder_hidden, None, None)
 
         elif return_type == "decode":
-            outputs, hidden, att_probs, att_vectors = self._decode(**kwargs)
-
+            outputs, hidden, att_probs, att_vectors = self._decode(**kwargs)     
             # return decoder outputs
             return_tuple = (outputs, hidden, att_probs, att_vectors)
 

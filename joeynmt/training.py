@@ -86,7 +86,8 @@ class TrainManager:
             reset_scheduler,
             reset_optimizer,
             reset_iter_state,
-            theta # penalty factor for logits for invalid tokens before softmax
+            theta, # penalty factor for logits for invalid tokens before softmax
+            add_loss_term,
         ) = parse_train_args(cfg["training"])
 
         # logging and storing
@@ -214,6 +215,7 @@ class TrainManager:
         
         # set theta for training penalty
         self.theta = torch.tensor(theta, dtype=self.dtype).to(self.device)
+        self.add_loss_term = add_loss_term
         
         # compile model
         if cfg["model"]["use_compile"]:
@@ -624,6 +626,7 @@ class TrainManager:
             batch_loss, _, _, correct_tokens = self.model(
                 return_type="loss", **vars(batch),
                 theta=self.theta,
+                add_loss_term=self.add_loss_term
             )
 
         # normalize batch loss
