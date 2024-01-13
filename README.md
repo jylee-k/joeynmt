@@ -2,6 +2,36 @@
 [![build](https://github.com/joeynmt/joeynmt/actions/workflows/main.yml/badge.svg)](https://github.com/joeynmt/joeynmt/actions/workflows/main.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+## For Marco
+
+### Data
+The splits can be found under the following directories:
+
+```processed/data/spaced/{type}/{split}```
+
+where ```{type}``` can be ```compat_f``` (compatibility jamo with filler jongseong), ```non-compat``` (positional), ```syllable```
+
+For example, the train split for positional can be found under:
+
+```processed/data/spaced/non-compat/train``` (with ```.ko``` or ```.en``` suffix)
+
+### Training 
+
+```python -m joeynmt train configs/aihub_en-ko_bpe.yaml```
+
+### Running inference
+Actually this should be done automatically right after training, but because the testing config is shared between validation and testing, of which validation does not require beamsearch and testing does, the testing is halted by an AssertionError of "no loss function"
+
+So inference has to be carried out manually post-training for now.
+
+```python -m joeynmt test models/compat_6551_6551_40/config.yaml -o models/compat_6551_6551_40/predictions```
+
+and the output is saved to ```models/compat_6551_6551_40/predictions.test``` as text.
+
+### BLEU and chrF calculation
+
+I usually just run this on a notebook, the code is in ```scripts/bleu_chrf.py```
+
 ## Goal and Purpose
 :koala: Joey NMT framework is developed for educational purposes.
 It aims to be a **clean** and **minimalistic** code base to help novices 

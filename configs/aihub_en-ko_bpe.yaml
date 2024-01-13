@@ -2,11 +2,11 @@ name: "aihub_en-ko_bpe"
 joeynmt_version: "2.0.0"
 
 data:
-    train: "../../data/aihub_en-ko/processed/data/spaced/compat_f/train"
-    dev: "../../data/aihub_en-ko/processed/data/spaced/compat_f/dev"
-    test: "../../data/aihub_en-ko/processed/data/spaced/compat_f/test"
+    train: "../../data/aihub_en-ko/processed/data/spaced/syllable/train"
+    dev: "../../data/aihub_en-ko/processed/data/spaced/syllable/dev"
+    test: "../../data/aihub_en-ko/processed/data/spaced/syllable/test"
     dataset_type: "plain"
-    vocab_type: "compat" # "compat", "positional", "syllable"
+    vocab_type: "syllable" # "compat", "positional", "syllable"
     sample_dev_subset: 5000 # run validation on this number of random samples from dev set, fixed seed 42 in datasets.py
     src:
         lang: "en"
@@ -15,12 +15,12 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_en_6000.txt"
+        voc_file: "models/syllable_test_big/src_vocab.txt"
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 6000
+            num_merges: 10000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_en.10000"
-            model_file: "../../data/aihub_en-ko/processed/data/spaced/compat_f/bpe_en.6000"
+            model_file: "models/syllable_test_big/hf_bpe_en.10000"
             pretokenizer: "moses"
     trg:
         lang: "ko"
@@ -29,14 +29,14 @@ data:
         normalize: False
         level: "bpe"
         voc_min_freq: 1
-        voc_file: "models/compat_f_6551/trg_vocab.txt"
+        voc_file: "models/syllable_test_big/trg_vocab.txt"
         # mask_file: "models/compat_f_6551/vocab_ko_6551_mask.pt" # comment for no masking
         # tag_file: "models/compat_f_6551/vocab_ko_6551_tag.pt" # comment for no masking
         tokenizer_type: "huggingface_bpe"
         tokenizer_cfg:
-            num_merges: 6551
+            num_merges: 10000
             #codes: "../../data/aihub_en-ko/processed/data/spaced/compat/hf_bpe_ko.6000"
-            model_file: "models/compat_f_6551/bpe_ko.6551"
+            model_file: "models/syllable_test_big/hf_bpe_ko.10000"
             pretokenizer: "none"
 
 testing:
@@ -56,7 +56,7 @@ testing:
 
 training:
     # load_model: "models/non-compat_hf_bpe_10000_ppl_masked_1.5_fixed/best.ckpt"
-    random_seed: 42
+    random_seed: 40
     optimizer: "adam"
     normalization: "tokens"
     adam_betas: [0.9, 0.98]
@@ -77,14 +77,14 @@ training:
     epochs: 100
     validation_freq: -1 # set -1 for validation every epoch
     logging_freq: 1000
-    model_dir: "models/compat_f_test_big_6551_en6k"
+    model_dir: "models/syllable_10000_10000_40"
     overwrite: False
     shuffle: True
     use_cuda: True
-    cuda_device: 3
+    cuda_device: 2
     print_valid_sents: [0, 1, 2, 3, 4]
     keep_best_ckpts: 1
-    theta: 1.5 # penalty for invalid tokens during softmax (1.0 = no penalty)
+    theta: 1.0 # penalty for invalid tokens during softmax (1.0 = no penalty)
     add_loss_term: False
 
 model:
